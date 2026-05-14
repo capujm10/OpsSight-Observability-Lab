@@ -104,6 +104,8 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
       - uses: azure/setup-kubectl@v4
+      - name: Start Kubernetes cluster
+        uses: helm/kind-action@v1.10.0
       - name: Install YAML tooling
         run: |
           python -m pip install --upgrade pip
@@ -115,7 +117,7 @@ jobs:
       - name: Validate Compose
         run: docker compose config --quiet
       - name: Validate Kubernetes manifests
-        run: kubectl create --dry-run=client --validate=false -f k8s/base -f k8s/api -f k8s/monitoring
+        run: kubectl apply --dry-run=client --validate=false -f k8s/base -f k8s/api -f k8s/monitoring
 
   security:
     name: Security scan
