@@ -27,7 +27,7 @@ async def test_rule_based_provider_generates_operational_rca() -> None:
         logs=LogContext(
             correlation_ids=["trace-chain-check"],
             patterns=["dependency_unavailable", "status_code=503"],
-            loki_queries=["{service=\"opsight-api\",severity=\"ERROR\"} | json"],
+            loki_queries=['{service="opsight-api",severity="ERROR"} | json'],
         ),
     )
 

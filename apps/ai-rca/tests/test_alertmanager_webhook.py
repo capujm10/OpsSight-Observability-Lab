@@ -57,7 +57,7 @@ async def test_alertmanager_webhook_enriches_with_live_telemetry_and_persists_ar
                 "result": [
                     {
                         "stream": {"service": "opsight-api", "severity": "ERROR"},
-                        "values": [["1715659916000000000", "{\"status_code\":503,\"message\":\"dependency unavailable\"}"]],
+                        "values": [["1715659916000000000", '{"status_code":503,"message":"dependency unavailable"}']],
                     }
                 ]
             },

@@ -25,9 +25,7 @@ class LiveTelemetryEnricher:
                 '(sum(rate(opsight_http_requests_total{status_code=~"5.."}[5m])) or vector(0)) / '
                 "clamp_min(sum(rate(opsight_http_requests_total[5m])), 1)"
             ),
-            "api_p95_latency_seconds": (
-                "histogram_quantile(0.95, sum(rate(opsight_http_request_duration_seconds_bucket[5m])) by (le))"
-            ),
+            "api_p95_latency_seconds": ("histogram_quantile(0.95, sum(rate(opsight_http_request_duration_seconds_bucket[5m])) by (le))"),
             "dependency_p95_latency_seconds": (
                 "histogram_quantile(0.95, sum(rate(opsight_payment_duration_seconds_bucket[5m])) by (le, operation))"
             ),

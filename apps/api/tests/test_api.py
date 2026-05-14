@@ -1,6 +1,9 @@
+import importlib
 import os
 import sys
 from pathlib import Path
+
+from fastapi.testclient import TestClient
 
 os.environ["OPSIGHT_OTEL_ENABLED"] = "false"
 
@@ -10,9 +13,8 @@ for module_name in list(sys.modules):
     if module_name == "app" or module_name.startswith("app."):
         del sys.modules[module_name]
 
-import app.api.orders as orders_api
-from app.main import app
-from fastapi.testclient import TestClient
+orders_api = importlib.import_module("app.api.orders")
+app = importlib.import_module("app.main").app
 
 client = TestClient(app)
 

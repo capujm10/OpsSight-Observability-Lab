@@ -5,6 +5,13 @@ services:
     build:
       context: ./apps/api
     container_name: opsight-api
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     environment:
       OPSIGHT_ENVIRONMENT: local
       OPSIGHT_LOG_LEVEL: INFO
@@ -31,6 +38,13 @@ services:
     build:
       context: ./apps/dependency
     container_name: opsight-payment-gateway
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     environment:
       DEPENDENCY_ENVIRONMENT: local
       DEPENDENCY_LOG_LEVEL: INFO
@@ -55,6 +69,13 @@ services:
     build:
       context: ./apps/ai-rca
     container_name: opsight-ai-rca
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     environment:
       OPSIGHT_ENVIRONMENT: local
       AI_RCA_LOG_LEVEL: INFO
@@ -98,6 +119,13 @@ services:
     build:
       context: ./apps/local-runtime-exporter
     container_name: opsight-local-runtime-exporter
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     environment:
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
       HOST_ROOT: /host-root
@@ -215,8 +243,8 @@ services:
     image: grafana/grafana:11.4.0
     container_name: opsight-grafana
     environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_SECURITY_ADMIN_USER: ${GF_SECURITY_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD:-admin}
       GF_USERS_DEFAULT_THEME: dark
       GF_AUTH_ANONYMOUS_ENABLED: "false"
       GF_FEATURE_TOGGLES_ENABLE: traceqlEditor correlations

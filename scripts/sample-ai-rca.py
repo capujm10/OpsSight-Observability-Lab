@@ -34,8 +34,8 @@ def main() -> int:
             "patterns": ["dependency_unavailable", "status_code=503"],
             "exception_signatures": ["DownstreamDependencyUnavailable"],
             "loki_queries": [
-                "{service=\"opsight-api\",severity=\"ERROR\"} | json",
-                "{service=\"payment-gateway\"} | json | outcome=\"failure\"",
+                '{service="opsight-api",severity="ERROR"} | json',
+                '{service="payment-gateway"} | json | outcome="failure"',
             ],
         },
     }

@@ -121,9 +121,7 @@ def _summary(
             "and event-log telemetry should be treated as first-class incident evidence."
         )
     dependency_clause = (
-        f" originated from {dependency} dependency degradation"
-        if dependency
-        else " requires correlation across metrics, logs, and traces"
+        f" originated from {dependency} dependency degradation" if dependency else " requires correlation across metrics, logs, and traces"
     )
     impact = []
     if latency:
@@ -184,7 +182,10 @@ def _hypotheses(
     if domain == "ai-runtime":
         causes.append(
             RCAHypothesis(
-                cause="Ollama inference latency increased due to GPU VRAM pressure, model load churn, CPU fallback, or local memory contention",
+                cause=(
+                    "Ollama inference latency increased due to GPU VRAM pressure, "
+                    "model load churn, CPU fallback, or local memory contention"
+                ),
                 confidence="high" if "gpu" in " ".join(context.logs.patterns).lower() or latency > 10 else "medium",
                 supporting_signals=context.logs.patterns
                 + [signal.name for signal in context.metrics]
@@ -200,7 +201,10 @@ def _hypotheses(
     if domain == "docker":
         causes.append(
             RCAHypothesis(
-                cause="Local Docker runtime instability from unhealthy containers, restart loops, resource saturation, or filesystem growth",
+                cause=(
+                    "Local Docker runtime instability from unhealthy containers, "
+                    "restart loops, resource saturation, or filesystem growth"
+                ),
                 confidence="high" if context.alert and "Restart" in context.alert.name else "medium",
                 supporting_signals=context.logs.patterns + [signal.name for signal in context.metrics],
                 impacted_systems=[service, "docker-desktop"],
@@ -228,7 +232,10 @@ def _hypotheses(
     if domain == "workstation":
         causes.append(
             RCAHypothesis(
-                cause="Workstation infrastructure pressure from Windows CPU, disk, service failure, WSL2 memory pressure, or event-log errors",
+                cause=(
+                    "Workstation infrastructure pressure from Windows CPU, disk, "
+                    "service failure, WSL2 memory pressure, or event-log errors"
+                ),
                 confidence="medium",
                 supporting_signals=context.logs.patterns + [signal.name for signal in context.metrics],
                 impacted_systems=[service, "windows-host", "wsl2", "docker-desktop"],
@@ -290,9 +297,7 @@ def _hypotheses(
     ]
 
 
-def _actions(
-    context: IncidentContext, dependency: str | None, burn: float, latency: float, error_rate: float, domain: str
-) -> list[str]:
+def _actions(context: IncidentContext, dependency: str | None, burn: float, latency: float, error_rate: float, domain: str) -> list[str]:
     actions = ["Declare or maintain incident ownership until SLO recovery is visible."]
     if domain == "ai-runtime":
         actions.extend(
