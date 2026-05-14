@@ -1,3 +1,15 @@
+import os
+import sys
+from pathlib import Path
+
+os.environ["OPSIGHT_OTEL_ENABLED"] = "false"
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+for module_name in list(sys.modules):
+    if module_name == "app" or module_name.startswith("app."):
+        del sys.modules[module_name]
+
 import app.api.orders as orders_api
 from app.main import app
 from fastapi.testclient import TestClient

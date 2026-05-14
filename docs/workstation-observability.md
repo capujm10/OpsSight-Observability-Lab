@@ -58,6 +58,28 @@ Install `windows_exporter` from the official prometheus-community project and en
 msiexec /i windows_exporter-<version>-amd64.msi ENABLED_COLLECTORS="cpu,cs,logical_disk,memory,net,os,process,service,system,tcp"
 ```
 
+Or run the OpsSight helper from an elevated PowerShell session:
+
+```powershell
+.\scripts\install-windows-observability.ps1
+```
+
+For a non-admin workstation demo, run the user-mode helper instead:
+
+```powershell
+.\scripts\start-windows-exporter-dev.ps1
+```
+
+The user-mode helper downloads the official `windows_exporter` executable into `.opsight-tools/`, starts it on port `9182`, updates `observability/prometheus/file_sd/targets.local.json`, and reloads Prometheus. Use the elevated installer for persistent service-based monitoring.
+
+For non-admin Windows Event Log demo ingestion, run:
+
+```powershell
+.\scripts\start-windows-eventlog-forwarder.ps1 -Once
+```
+
+For continuous local forwarding, omit `-Once`. The service-based Alloy path remains the preferred persistent option.
+
 Validate from Windows:
 
 ```powershell
@@ -70,7 +92,7 @@ Validate from Docker Desktop:
 docker run --rm curlimages/curl:8.10.1 http://host.docker.internal:9182/metrics
 ```
 
-Prometheus scrapes this as job `windows-exporter`.
+Prometheus uses file-based discovery for optional host targets. The helper writes the ignored machine-local file `observability/prometheus/file_sd/targets.local.json` with the `windows-exporter` target and reloads Prometheus. To enable other optional targets manually, copy the relevant entry from `observability/prometheus/file_sd/targets.example` into `targets.local.json`.
 
 ## Windows Alloy Setup
 
@@ -113,7 +135,7 @@ Create a local monitoring namespace and install kube-state-metrics:
 ```powershell
 kubectl create namespace monitoring
 kubectl apply -f k8s/monitoring/kube-state-metrics.yaml
-kubectl -n monitoring port-forward svc/kube-state-metrics 8080:8080
+kubectl -n monitoring port-forward --address 0.0.0.0 svc/kube-state-metrics 18080:8080
 ```
 
 Install metrics-server using your cluster method. For k3d and k3s, expose it locally if you want Prometheus outside the cluster to scrape it:
@@ -122,7 +144,13 @@ Install metrics-server using your cluster method. For k3d and k3s, expose it loc
 kubectl -n kube-system port-forward svc/metrics-server 4443:443
 ```
 
-OpsSight Prometheus includes jobs for `host.docker.internal:8080` and `host.docker.internal:4443`. For a production-like cluster, prefer an in-cluster Prometheus or Alloy DaemonSet with service discovery.
+OpsSight Prometheus uses file-based target discovery for optional local cluster endpoints. Add the kube-state-metrics entry from `observability/prometheus/file_sd/targets.example` into `observability/prometheus/file_sd/targets.local.json`, then reload Prometheus:
+
+```powershell
+Invoke-RestMethod -Method Post -Uri http://localhost:9090/-/reload
+```
+
+For a production-like cluster, prefer an in-cluster Prometheus or Alloy DaemonSet with service discovery.
 
 Primary Kubernetes signals:
 
@@ -166,6 +194,8 @@ For hosts with NVIDIA Container Toolkit:
 ```powershell
 docker compose --profile gpu up -d dcgm-exporter
 ```
+
+Then add the `dcgm-exporter:9400` entry from `observability/prometheus/file_sd/targets.example` into `targets.local.json` and reload Prometheus. The default `local-runtime-exporter` GPU path remains active even when DCGM is not enabled.
 
 GPU signals:
 
@@ -218,10 +248,10 @@ Each scenario creates local evidence where practical, sends an Alertmanager-comp
 
 ## Troubleshooting
 
-- Windows panels empty: verify `windows_exporter` on `localhost:9182`, then verify Docker can reach `host.docker.internal:9182`.
-- Event Logs missing: confirm Windows Alloy is installed, running as Administrator, and using `windows-host.alloy`.
+- Windows panels empty: verify `windows_exporter` on `localhost:9182`, verify `observability/prometheus/file_sd/targets.local.json` contains the Windows target, then verify Docker can reach `host.docker.internal:9182`.
+- Event Logs missing: confirm Windows Alloy is installed, running as Administrator, and using `windows-host.alloy`; for non-admin demo mode, run `.\scripts\start-windows-eventlog-forwarder.ps1 -Once`.
 - cAdvisor empty: confirm Alloy is running with privileged mode and Docker socket/host mounts.
 - Docker health empty: confirm `local-runtime-exporter` can read `/var/run/docker.sock`.
-- Kubernetes panels empty: confirm port-forwards for kube-state-metrics and metrics-server are active.
+- Kubernetes panels empty: confirm port-forwards for kube-state-metrics and metrics-server are active and that the file discovery targets are enabled.
 - Ollama unavailable: start Ollama and confirm `http://host.docker.internal:11434/api/tags` from the OpsSight network.
 - GPU panels empty: install NVIDIA drivers and `nvidia-smi`; use the `gpu` profile only when NVIDIA Container Toolkit is configured.

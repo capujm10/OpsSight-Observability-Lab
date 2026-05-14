@@ -11,6 +11,9 @@ from app.config.settings import Settings
 
 
 def configure_tracing(app, settings: Settings) -> None:
+    if not settings.otel_enabled:
+        return
+
     resource = Resource.create(
         {
             "service.name": settings.service_name,

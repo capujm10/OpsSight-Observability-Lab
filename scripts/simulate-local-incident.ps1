@@ -12,15 +12,23 @@ function Send-RcaFixture {
   python (Join-Path $PSScriptRoot "send-alertmanager-webhook.py")
 }
 
+function Remove-DemoContainer {
+  param([string]$Name)
+  try {
+    docker rm -f $Name *>$null
+  } catch {
+  }
+}
+
 switch ($Scenario) {
   "container-crashloop" {
-    docker rm -f opsight-crashloop-demo 2>$null | Out-Null
+    Remove-DemoContainer "opsight-crashloop-demo"
     docker run -d --name opsight-crashloop-demo --label service=opsight-crashloop-demo --restart=always alpine:3.20 sh -c "echo opsight crash loop scenario; exit 42" | Out-Null
     Start-Sleep -Seconds 20
     Send-RcaFixture "alertmanager-docker-crashloop.json"
   }
   "docker-memory" {
-    docker rm -f opsight-memory-pressure-demo 2>$null | Out-Null
+    Remove-DemoContainer "opsight-memory-pressure-demo"
     docker run -d --name opsight-memory-pressure-demo --label service=opsight-memory-pressure-demo --memory=128m alpine:3.20 sh -c "apk add --no-cache stress-ng >/dev/null && stress-ng --vm 1 --vm-bytes 110m --timeout ${DurationSeconds}s" | Out-Null
     Start-Sleep -Seconds 20
     Send-RcaFixture "alertmanager-docker-memory.json"
@@ -36,13 +44,13 @@ switch ($Scenario) {
     Send-RcaFixture "alertmanager-ollama-latency.json"
   }
   "wsl-cpu" {
-    docker rm -f opsight-wsl-cpu-demo 2>$null | Out-Null
+    Remove-DemoContainer "opsight-wsl-cpu-demo"
     docker run -d --name opsight-wsl-cpu-demo --label service=opsight-wsl-cpu-demo alpine:3.20 sh -c "apk add --no-cache stress-ng >/dev/null && stress-ng --cpu 2 --timeout ${DurationSeconds}s" | Out-Null
     Start-Sleep -Seconds 20
     Send-RcaFixture "alertmanager-wsl-pressure.json"
   }
   "disk-pressure" {
-    docker rm -f opsight-disk-pressure-demo 2>$null | Out-Null
+    Remove-DemoContainer "opsight-disk-pressure-demo"
     docker run -d --name opsight-disk-pressure-demo --label service=opsight-disk-pressure-demo alpine:3.20 sh -c "dd if=/dev/zero of=/tmp/opsight-disk-pressure.bin bs=1M count=512; sleep ${DurationSeconds}" | Out-Null
     Start-Sleep -Seconds 20
     Send-RcaFixture "alertmanager-workstation-disk.json"

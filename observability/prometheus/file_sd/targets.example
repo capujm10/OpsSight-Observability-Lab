@@ -1,0 +1,32 @@
+[
+  {
+    "targets": ["host.docker.internal:9182"],
+    "labels": {
+      "job": "windows-exporter",
+      "service": "windows-host",
+      "host_domain": "windows"
+    }
+  },
+  {
+    "targets": ["host.docker.internal:9323"],
+    "labels": {
+      "job": "docker-daemon",
+      "service": "docker-desktop"
+    }
+  },
+  {
+    "targets": ["host.docker.internal:18080"],
+    "labels": {
+      "job": "kubernetes-kube-state-metrics",
+      "service": "kube-state-metrics",
+      "cluster": "local"
+    }
+  },
+  {
+    "targets": ["dcgm-exporter:9400"],
+    "labels": {
+      "job": "dcgm-exporter",
+      "service": "gpu"
+    }
+  }
+]

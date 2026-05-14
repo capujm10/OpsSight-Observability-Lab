@@ -129,6 +129,9 @@ async def proxy_ollama_generate(request: Request) -> Response:
 
 
 def collect_docker_metrics() -> None:
+    docker_container_state.clear()
+    docker_container_health.clear()
+    docker_container_restarts.clear()
     try:
         client = docker.from_env()
         containers = client.containers.list(all=True)

@@ -21,3 +21,5 @@ loki-data/
 tempo-data/
 grafana-data/
 artifacts/
+.opsight-tools/
+observability/prometheus/file_sd/targets.local.json

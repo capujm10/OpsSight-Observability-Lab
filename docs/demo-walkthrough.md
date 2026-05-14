@@ -162,9 +162,15 @@ curl http://localhost:9108/metrics
 
 Open the OpsSight Workstation Operations dashboard. Confirm:
 
-- `windows-exporter` is up if Windows host monitoring is installed.
+- `windows-exporter` is up if Windows host monitoring is installed with `.\scripts\install-windows-observability.ps1` or started for demo mode with `.\scripts\start-windows-exporter-dev.ps1`.
 - WSL2 memory and load are populated from the local runtime exporter.
 - Windows disk, service, network, and Event Log panels populate after host Alloy or windows_exporter setup.
+
+For non-admin Event Log demo mode:
+
+```powershell
+.\scripts\start-windows-eventlog-forwarder.ps1 -Once
+```
 
 Use [docs/workstation-observability.md](/C:/Users/PERSONAL/Documents/GitHub/OpsSight-Observability-Lab/docs/workstation-observability.md) for the Windows host service setup.
 
@@ -192,7 +198,13 @@ Install and expose kube-state-metrics:
 ```powershell
 kubectl create namespace monitoring
 kubectl apply -f k8s/monitoring/kube-state-metrics.yaml
-kubectl -n monitoring port-forward svc/kube-state-metrics 8080:8080
+kubectl -n monitoring port-forward --address 0.0.0.0 svc/kube-state-metrics 18080:8080
+```
+
+Add the kube-state-metrics entry from `observability/prometheus/file_sd/targets.example` into `observability/prometheus/file_sd/targets.local.json`, then reload Prometheus:
+
+```powershell
+Invoke-RestMethod -Method Post -Uri http://localhost:9090/-/reload
 ```
 
 Create a bad pod in any local namespace to trigger CrashLoopBackOff:
@@ -234,6 +246,8 @@ Optional DCGM exporter:
 ```powershell
 docker compose --profile gpu up -d dcgm-exporter
 ```
+
+Enable the optional `dcgm-exporter:9400` target from `observability/prometheus/file_sd/targets.example` in `observability/prometheus/file_sd/targets.local.json` if you want Prometheus to scrape DCGM directly.
 
 Trigger the RCA fixture:
 

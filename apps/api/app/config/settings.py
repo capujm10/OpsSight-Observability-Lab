@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     service_version: str = "1.0.0"
     environment: str = "local"
     log_level: str = "INFO"
+    otel_enabled: bool = True
     otel_exporter_otlp_endpoint: str = "http://alloy:4317"
     readiness_dependency_enabled: bool = True
     dependency_url: str = "http://dependency:8080"
