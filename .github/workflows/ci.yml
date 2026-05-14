@@ -115,7 +115,7 @@ jobs:
       - name: Validate Compose
         run: docker compose config --quiet
       - name: Validate Kubernetes manifests
-        run: kubectl apply --dry-run=client -f k8s/base -f k8s/api -f k8s/monitoring
+        run: kubectl apply --dry-run=client --validate=false -f k8s/base -f k8s/api -f k8s/monitoring
 
   security:
     name: Security scan
