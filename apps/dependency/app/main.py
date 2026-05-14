@@ -5,7 +5,7 @@ import time
 from uuid import uuid4
 
 from fastapi import FastAPI, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
@@ -13,6 +13,7 @@ from app.config.settings import get_settings
 from app.logging_config import configure_logging
 from app.logging_context import correlation_id_ctx, trace_id_ctx
 from app.metrics import PAYMENT_ACTIVE_REQUESTS, PAYMENT_DURATION_SECONDS, PAYMENT_REQUESTS_TOTAL, metrics_response
+from app.security import SecurityHeadersMiddleware
 from app.tracing import configure_tracing, current_trace_id
 
 settings = get_settings()
@@ -24,9 +25,11 @@ configure_tracing(app, settings)
 
 
 class PaymentRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     operation: str = "authorize"
     force_failure: bool = False
-    latency_multiplier: float = 1.0
+    latency_multiplier: float = Field(default=1.0, ge=0.1, le=10.0)
 
 
 class RequestContextMiddleware(BaseHTTPMiddleware):
@@ -52,6 +55,7 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
 
 
 app.add_middleware(RequestContextMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
 
 
 @app.get("/health/live")

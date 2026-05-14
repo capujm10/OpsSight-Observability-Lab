@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import shutil
 import subprocess
@@ -11,11 +12,12 @@ import docker
 import httpx
 from docker.errors import DockerException
 from fastapi import FastAPI, Request, Response
-from prometheus_client import CONTENT_TYPE_LATEST, Gauge, Histogram, Counter, generate_latest
+from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
 
 APP_NAME = "opsight-local-runtime-exporter"
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://host.docker.internal:11434").rstrip("/")
 HOST_ROOT = os.getenv("HOST_ROOT", "/host-root")
+logger = logging.getLogger(APP_NAME)
 
 app = FastAPI(title=APP_NAME, version="1.0.0")
 
@@ -116,11 +118,12 @@ async def proxy_ollama_generate(request: Request) -> Response:
             ollama_failures.labels(endpoint, model, f"http_{status}").inc()
         _record_ollama_response(model, response)
         return Response(content=response.content, status_code=response.status_code, media_type=response.headers.get("content-type"))
-    except Exception as exc:
+    except httpx.HTTPError as exc:
         elapsed = time.perf_counter() - started
         ollama_latency.labels(endpoint, model).observe(elapsed)
         ollama_requests.labels(endpoint, model, "exception").inc()
         ollama_failures.labels(endpoint, model, exc.__class__.__name__).inc()
+        logger.warning("ollama proxy request failed", extra={"endpoint": endpoint, "model": model, "reason": exc.__class__.__name__})
         return Response(
             content=json.dumps({"error": f"Ollama proxy request failed: {exc.__class__.__name__}"}),
             status_code=502,
@@ -168,8 +171,9 @@ async def collect_ollama_inventory() -> None:
             ollama_active_models.labels(name).set(1)
         if not seen:
             ollama_active_models.labels("none").set(0)
-    except Exception:
+    except (httpx.HTTPError, ValueError) as exc:
         ollama_up.set(0)
+        logger.debug("ollama inventory unavailable", extra={"reason": exc.__class__.__name__})
 
 
 def collect_wsl_metrics() -> None:
@@ -178,8 +182,8 @@ def collect_wsl_metrics() -> None:
         wsl_load.labels("1m").set(float(one))
         wsl_load.labels("5m").set(float(five))
         wsl_load.labels("15m").set(float(fifteen))
-    except Exception:
-        pass
+    except (OSError, ValueError) as exc:
+        logger.debug("wsl load average unavailable", extra={"reason": exc.__class__.__name__})
 
     meminfo = _parse_meminfo()
     for key in ("MemTotal", "MemAvailable", "SwapTotal", "SwapFree"):
@@ -192,8 +196,8 @@ def collect_wsl_metrics() -> None:
             wsl_filesystem.labels(HOST_ROOT, "total").set(usage.total)
             wsl_filesystem.labels(HOST_ROOT, "used").set(usage.used)
             wsl_filesystem.labels(HOST_ROOT, "free").set(usage.free)
-        except OSError:
-            pass
+        except OSError as exc:
+            logger.debug("host filesystem usage unavailable", extra={"reason": exc.__class__.__name__})
 
 
 def collect_gpu_metrics() -> None:
@@ -204,8 +208,9 @@ def collect_gpu_metrics() -> None:
     ]
     try:
         result = subprocess.run(command, check=True, capture_output=True, text=True, timeout=3)
-    except Exception:
+    except (FileNotFoundError, subprocess.SubprocessError, OSError) as exc:
         gpu_up.set(0)
+        logger.debug("gpu telemetry unavailable", extra={"reason": exc.__class__.__name__})
         return
 
     gpu_up.set(1)
@@ -256,7 +261,8 @@ def _parse_meminfo() -> dict[str, float]:
         for line in _read_text("/proc/meminfo").splitlines():
             key, value = line.split(":", 1)
             values[key] = float(value.strip().split()[0]) * 1024
-    except Exception:
+    except (OSError, ValueError) as exc:
+        logger.debug("meminfo unavailable", extra={"reason": exc.__class__.__name__})
         return values
     return values
 

@@ -4,6 +4,7 @@ from app.config import get_settings
 from app.logging_config import configure_logging
 from app.middleware import RequestContextMiddleware
 from app.models.rca import AlertmanagerWebhook, IncidentContext, RCAResponse, WebhookRCAResult
+from app.security import SecurityHeadersMiddleware
 from app.telemetry.metrics import metrics_response
 from app.telemetry.tracing import configure_tracing
 from app.workflows.rca_workflow import RCAWorkflow
@@ -19,6 +20,7 @@ app = FastAPI(
         "telemetry interpretation, RCA hypotheses, and remediation guidance."
     ),
 )
+app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RequestContextMiddleware)
 configure_tracing(app, settings)
 workflow = RCAWorkflow(settings)

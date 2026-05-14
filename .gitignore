@@ -9,6 +9,7 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 .ruff_cache/
+.pip-audit-cache/
 .mypy_cache/
 .tmp-postmortem-tests/
 .tmp-ai-rca-tests/

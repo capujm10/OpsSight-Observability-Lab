@@ -1,5 +1,10 @@
 # OpsSight Observability Lab
 
+[![CI](https://github.com/capujm10/OpsSight-Observability-Lab/actions/workflows/ci.yml/badge.svg)](https://github.com/capujm10/OpsSight-Observability-Lab/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Python 3.12](https://img.shields.io/badge/Python-3.12-blue.svg)](pyproject.toml)
+[![FastAPI](https://img.shields.io/badge/FastAPI-observable%20services-009688.svg)](apps/api)
+
 OpsSight Observability Lab is a fully containerized local observability and SRE platform for production-style FastAPI services. It is designed as a modern enterprise-grade observability and SRE platform inspired by real-world SaaS incident management and cloud-native operational practices.
 
 The goal is operational realism: metrics, logs, traces, dashboards, alerts, and incident workflows all come from a real API service and real telemetry pipelines.
@@ -68,6 +73,8 @@ Open:
 - Loki: `http://localhost:3100`
 - Tempo: `http://localhost:3200`
 - Alloy: `http://localhost:12345`
+
+The Grafana `admin` / `admin` credential is a local demo default only. Set `GF_SECURITY_ADMIN_USER` and `GF_SECURITY_ADMIN_PASSWORD` before exposing the stack outside your workstation.
 
 Run a smoke test:
 
@@ -265,12 +272,20 @@ On Windows without `make`, run the underlying `docker compose`, `bash`, and `cur
 ## Local Tests
 
 ```bash
-cd apps/api
 python -m venv .venv
 . .venv/Scripts/activate
-pip install -r requirements.txt
-pytest
+pip install -r apps/api/requirements.txt
+pip install -r apps/dependency/requirements.txt
+pip install -r apps/ai-rca/requirements.txt
+python -m ruff check apps scripts tests
+python -m ruff format --check apps scripts tests
+cd apps/api && python -m pytest
+cd ../ai-rca && python -m pytest
+cd ../..
+python -m pytest tests
 ```
+
+The Python services intentionally use service-local packages named `app`. Run service tests from their service directories so Python imports the intended service package.
 
 ## Kubernetes Readiness
 
@@ -285,22 +300,21 @@ Helm-ready packaging placeholders live under `helm/opsight/`.
 
 ## CI/CD
 
-`.github/workflows/ci.yml` validates:
+`.github/workflows/ci.yml` validates split quality gates:
 
-- Python linting with Ruff
-- API tests with pytest
-- AI RCA tests with pytest
-- postmortem generator tests
-- mypy type checks
+- Ruff linting and format checks
+- service-scoped pytest suites
+- mypy type checks per service
 - YAML validation
 - Docker Compose syntax
-- Docker image builds
+- Python dependency auditing
+- Docker image builds and optional filesystem scanning
 - local stack smoke tests
 - Kubernetes dry-run validation
 
 ## Security Baseline
 
-The API and dependency containers run as non-root users. Dependencies are pinned. Kubernetes manifests include resource requests, limits, probes, and NetworkPolicy examples. See `docs/security-hardening.md` for production guidance.
+Custom application containers run as non-root users and the local app services use read-only root filesystems, dropped Linux capabilities, no-new-privileges, health checks, structured logs, correlation IDs, and security headers. Dependencies are pinned and audited in CI. Kubernetes manifests include resource requests, limits, probes, and NetworkPolicy examples. See `docs/security-hardening.md` and `docs/production-readiness-audit.md` for production guidance.
 
 ## Recruiter / Interviewer Explanation
 
@@ -327,7 +341,6 @@ This is intentionally framed as an internal operations platform: it includes ser
 
 ## Production Hardening Roadmap
 
-- Add Alertmanager webhook ingestion for live AI RCA requests.
 - Add direct Grafana annotation writes from generated RCA milestones.
 - Add signed postmortem approvals and follow-up task export to an issue tracker.
 - Add authentication and authorization controls for Grafana and API endpoints.

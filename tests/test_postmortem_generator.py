@@ -47,9 +47,7 @@ def test_generated_postmortems_include_required_operational_sections() -> None:
 def test_annotation_payload_contains_lifecycle_events() -> None:
     generator = load_generator()
     data = json.loads(
-        (ROOT / "incident-postmortems" / "examples" / "INC-2026-05-14-001-dependency-degradation.json").read_text(
-            encoding="utf-8"
-        )
+        (ROOT / "incident-postmortems" / "examples" / "INC-2026-05-14-001-dependency-degradation.json").read_text(encoding="utf-8")
     )
     annotations = json.loads(generator.annotation_json(data))
     tags = {tag for annotation in annotations for tag in annotation["tags"]}
