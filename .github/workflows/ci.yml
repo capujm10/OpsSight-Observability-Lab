@@ -173,6 +173,19 @@ jobs:
       - uses: actions/checkout@v4
       - name: Start stack
         run: docker compose up -d --build
+      - name: Wait for stack readiness
+        run: |
+          for i in {1..30}; do
+            if curl -sf http://localhost:8000/health >/dev/null 2>&1; then
+              echo "API is ready"
+              exit 0
+            fi
+            echo "Waiting for API... attempt $i/30"
+            docker compose ps
+            sleep 5
+          done
+          docker compose logs --tail=200
+          exit 1
       - name: Smoke test
         run: bash scripts/smoke-test.sh
       - name: Dump logs on failure
