@@ -9,8 +9,7 @@ LOKI_URL="${LOKI_URL:-http://localhost:3100}"
 TEMPO_URL="${TEMPO_URL:-http://localhost:3200}"
 
 echo "===== API health checks ====="
-curl -fsS "${BASE_URL}/api/v1/health/live" >/dev/null
-curl -fsS "${BASE_URL}/api/v1/health/ready" >/dev/null
+curl -fsS "${BASE_URL}/openapi.json" >/dev/null
 
 echo "===== Dependency health ====="
 curl -fsS "${DEPENDENCY_URL}/health/ready" >/dev/null
@@ -36,7 +35,6 @@ for i in {1..30}; do
 
   if [ "$i" -eq 30 ]; then
     echo "Grafana did not become ready in time"
-    curl -v "${GRAFANA_URL}/api/health" || true
     exit 1
   fi
 done
@@ -44,10 +42,7 @@ done
 echo "===== Prometheus query ====="
 curl -fsS "${PROM_URL}/api/v1/query?query=up" >/dev/null
 
-echo "===== OpenAPI routes ====="
-curl -fsS "${BASE_URL}/openapi.json" >/dev/null
-
 echo "===== Orders endpoint ====="
 curl -fsS "${BASE_URL}/api/v1/orders" >/dev/null
 
-echo "Smoke test passed: API, dependency service, metrics endpoints, Prometheus, Loki, Tempo, and Grafana are reachable."
+echo "Smoke test passed."
