@@ -1,0 +1,30 @@
+{
+  "receiver": "opsight-ai-rca",
+  "status": "firing",
+  "alerts": [
+    {
+      "status": "firing",
+      "labels": {
+        "alertname": "OpsSightOllamaLatencySpike",
+        "severity": "warning",
+        "service": "ollama",
+        "domain": "ai-runtime"
+      },
+      "annotations": {
+        "summary": "Ollama inference latency spike",
+        "description": "Ollama inference latency increased while GPU VRAM pressure and CPU fallback were suspected.",
+        "remediation": "Check active model size, GPU VRAM pressure, CPU fallback, prompt size, and concurrent workloads."
+      },
+      "startsAt": "2026-05-14T05:00:00Z",
+      "endsAt": "0001-01-01T00:00:00Z",
+      "fingerprint": "ollama-latency-demo"
+    }
+  ],
+  "groupLabels": {"alertname": "OpsSightOllamaLatencySpike"},
+  "commonLabels": {"service": "ollama"},
+  "commonAnnotations": {"summary": "Ollama inference latency spike"},
+  "externalURL": "http://alertmanager:9093",
+  "version": "4",
+  "groupKey": "{}:{alertname=\"OpsSightOllamaLatencySpike\"}",
+  "truncatedAlerts": 0
+}

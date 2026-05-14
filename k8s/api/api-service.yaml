@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: opsight-api
+  namespace: opsight
+  labels:
+    app: opsight-api
+spec:
+  selector:
+    app: opsight-api
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000

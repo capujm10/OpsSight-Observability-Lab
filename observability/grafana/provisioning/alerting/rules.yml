@@ -1,0 +1,84 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: OpsSight API SLO Alerts
+    folder: OpsSight Observability Lab
+    interval: 1m
+    rules:
+      - uid: opsight-grafana-high-latency
+        title: API p95 latency above 1s
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 300
+              to: 0
+            model:
+              expr: histogram_quantile(0.95, sum(rate(opsight_http_request_duration_seconds_bucket[5m])) by (le))
+              instant: true
+              refId: A
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    params: [1]
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: [C]
+                  reducer:
+                    type: last
+                  type: query
+              refId: C
+        for: 2m
+        labels:
+          severity: warning
+          service: opsight-api
+        annotations:
+          summary: API p95 latency is above threshold
+          description: Check latency simulation, dependency spans, resource contention, and slow endpoints.
+          remediation: Open the incident dashboard, identify the slow route, pivot from trace_id into Tempo, then mitigate the degraded dependency or rollback the change.
+      - uid: opsight-grafana-5xx-rate
+        title: Elevated 5xx response rate
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 300
+              to: 0
+            model:
+              expr: sum(rate(opsight_http_requests_total{status_code=~"5.."}[5m]))
+              instant: true
+              refId: A
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    params: [0.05]
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: [C]
+                  reducer:
+                    type: last
+                  type: query
+              refId: C
+        for: 2m
+        labels:
+          severity: critical
+          service: opsight-api
+        annotations:
+          summary: API is producing elevated server errors
+          description: Probable causes include simulated errors, dependency failure, or unhandled exceptions.
+          remediation: Query Loki for severity=ERROR, group by path and status_code, then open correlated traces in Tempo.

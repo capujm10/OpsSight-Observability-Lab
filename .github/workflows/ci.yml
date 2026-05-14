@@ -1,0 +1,76 @@
+name: OpsSight CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: azure/setup-kubectl@v4
+
+      - name: Install validation tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r apps/api/requirements.txt
+          pip install -r apps/dependency/requirements.txt
+          pip install -r apps/ai-rca/requirements.txt
+          pip install ruff==0.8.4 mypy==1.14.1 yamllint==1.35.1
+
+      - name: Lint Python
+        run: ruff check apps scripts tests
+
+      - name: Type check API
+        run: |
+          cd apps/api
+          mypy --config-file ../../pyproject.toml app
+
+      - name: Type check dependency service
+        run: |
+          cd apps/dependency
+          mypy --config-file ../../pyproject.toml app
+
+      - name: Type check AI RCA service
+        run: |
+          cd apps/ai-rca
+          mypy --config-file ../../pyproject.toml app
+
+      - name: Run API tests
+        run: |
+          cd apps/api
+          pytest
+
+      - name: Run AI RCA tests
+        run: |
+          cd apps/ai-rca
+          pytest
+
+      - name: Run postmortem generator tests
+        run: pytest tests
+
+      - name: Validate YAML
+        run: >
+          yamllint -d "{extends: relaxed, rules: {line-length: disable}}"
+          docker-compose.yml observability k8s .github helm
+
+      - name: Validate Compose
+        run: docker compose config --quiet
+
+      - name: Build containers
+        run: docker compose build
+
+      - name: Start stack
+        run: docker compose up -d
+
+      - name: Smoke test
+        run: bash scripts/smoke-test.sh
+
+      - name: Validate Kubernetes manifests
+        run: kubectl apply --dry-run=client -f k8s/base -f k8s/api -f k8s/monitoring

@@ -1,0 +1,30 @@
+{
+  "receiver": "opsight-ai-rca",
+  "status": "firing",
+  "alerts": [
+    {
+      "status": "firing",
+      "labels": {
+        "alertname": "OpsSightDockerContainerRestarting",
+        "severity": "warning",
+        "service": "docker-desktop",
+        "domain": "docker"
+      },
+      "annotations": {
+        "summary": "Local Docker container restart detected",
+        "description": "A local container entered a restart loop and generated Docker runtime telemetry.",
+        "remediation": "Inspect container exit code, logs, cAdvisor memory, CPU, and filesystem usage."
+      },
+      "startsAt": "2026-05-14T05:05:00Z",
+      "endsAt": "0001-01-01T00:00:00Z",
+      "fingerprint": "docker-crashloop-demo"
+    }
+  ],
+  "groupLabels": {"alertname": "OpsSightDockerContainerRestarting"},
+  "commonLabels": {"service": "docker-desktop"},
+  "commonAnnotations": {"summary": "Local Docker container restart detected"},
+  "externalURL": "http://alertmanager:9093",
+  "version": "4",
+  "groupKey": "{}:{alertname=\"OpsSightDockerContainerRestarting\"}",
+  "truncatedAlerts": 0
+}

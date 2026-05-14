@@ -1,0 +1,30 @@
+{
+  "receiver": "opsight-ai-rca",
+  "status": "firing",
+  "alerts": [
+    {
+      "status": "firing",
+      "labels": {
+        "alertname": "OpsSightContainerMemoryPressure",
+        "severity": "warning",
+        "service": "docker-desktop",
+        "domain": "docker"
+      },
+      "annotations": {
+        "summary": "Container memory saturation",
+        "description": "A local container exceeded 90 percent of its configured memory limit.",
+        "remediation": "Reduce workload, inspect process growth, and validate memory recovery before increasing limits."
+      },
+      "startsAt": "2026-05-14T05:10:00Z",
+      "endsAt": "0001-01-01T00:00:00Z",
+      "fingerprint": "docker-memory-demo"
+    }
+  ],
+  "groupLabels": {"alertname": "OpsSightContainerMemoryPressure"},
+  "commonLabels": {"service": "docker-desktop"},
+  "commonAnnotations": {"summary": "Container memory saturation"},
+  "externalURL": "http://alertmanager:9093",
+  "version": "4",
+  "groupKey": "{}:{alertname=\"OpsSightContainerMemoryPressure\"}",
+  "truncatedAlerts": 0
+}

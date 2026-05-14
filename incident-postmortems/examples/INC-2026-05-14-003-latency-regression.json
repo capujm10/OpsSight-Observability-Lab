@@ -1,0 +1,109 @@
+{
+  "id": "INC-2026-05-14-003",
+  "template": "latency-incident",
+  "title": "Order API p95 latency regression from slow dependency authorization path",
+  "severity": "SEV-3",
+  "status": "Resolved",
+  "type": "Latency incident",
+  "owner": "Backend Platform",
+  "incident_commander": "Not assigned",
+  "started_at": "2026-05-14T03:58:00Z",
+  "resolved_at": "2026-05-14T04:04:30Z",
+  "impact_summary": "Synthetic latency traffic increased p95 latency for order workflows that call payment-gateway authorization. The API remained available, but user-perceived response time degraded during the scenario.",
+  "affected_systems": [
+    "opsight-api /api/v1/simulate/latency",
+    "payment-gateway authorize operation",
+    "OpsSight API Golden Signals latency panels"
+  ],
+  "customer_impact": "Requests completed more slowly but did not fail. The issue was limited to dependency-backed paths and did not affect liveness or readiness.",
+  "detection_method": "High p95 latency alert and Golden Signals latency panel.",
+  "alert_triggered": "OpsSightHighP95Latency",
+  "slo_burn": "Latency SLI degraded; availability error budget was not directly consumed because requests completed successfully.",
+  "timeline": [
+    {
+      "timestamp": "2026-05-14T03:58:00Z",
+      "stage": "incident_start",
+      "event": "p95 latency crossed the operational threshold."
+    },
+    {
+      "timestamp": "2026-05-14T03:59:15Z",
+      "event": "On-call compared API latency p95 with dependency latency p95."
+    },
+    {
+      "timestamp": "2026-05-14T04:00:10Z",
+      "event": "Tempo traces showed long payment_gateway.http_call spans."
+    },
+    {
+      "timestamp": "2026-05-14T04:02:30Z",
+      "stage": "mitigation_deployed",
+      "event": "Latency simulation was stopped."
+    },
+    {
+      "timestamp": "2026-05-14T04:04:30Z",
+      "stage": "recovery_confirmed",
+      "event": "p95 latency returned below target and smoke test passed."
+    }
+  ],
+  "contributing_factors": [
+    "Dependency latency directly influenced the API critical path.",
+    "No cache or degraded response mode existed for dependency-backed order workflows.",
+    "The latency scenario generated enough slow spans to affect p95."
+  ],
+  "root_cause": "The payment-gateway authorization path was intentionally slowed, increasing the duration of API spans waiting on the dependency client call.",
+  "mitigation_steps": [
+    "Stopped latency simulation traffic.",
+    "Confirmed payment-gateway health and metrics endpoint remained healthy.",
+    "Compared p95 latency before and after mitigation.",
+    "Verified traces no longer contained slow dependency spans."
+  ],
+  "resolution": "Latency returned to baseline after simulated dependency slowness stopped.",
+  "recovery_validation": [
+    "API p95 latency returned below 1 second.",
+    "k6 smoke profile passed latency threshold.",
+    "Tempo traces showed normal dependency span duration.",
+    "No 5xx increase accompanied the latency event."
+  ],
+  "preventive_actions": [
+    "Add timeout budget documentation for dependency calls.",
+    "Add dashboard panel for slowest dependency operations.",
+    "Evaluate async fallback behavior for non-critical dependency metadata."
+  ],
+  "follow_up_tasks": [
+    {
+      "task": "Define per-dependency timeout budgets.",
+      "owner": "Backend Platform",
+      "priority": "P2",
+      "status": "Open"
+    },
+    {
+      "task": "Add dependency p95/p99 split by operation to SRE Overview.",
+      "owner": "Observability",
+      "priority": "P3",
+      "status": "Open"
+    }
+  ],
+  "lessons_learned": [
+    "Trace span duration is the fastest way to distinguish API compute latency from dependency wait time.",
+    "Latency incidents can be customer-impacting even without availability burn."
+  ],
+  "telemetry": {
+    "grafana_dashboards": [
+      "OpsSight API Golden Signals: /d/opsight-api-golden-signals/opsight-api-golden-signals",
+      "OpsSight Incident Investigation: /d/opsight-incident-investigation/opsight-incident-investigation"
+    ],
+    "prometheus_queries": [
+      "histogram_quantile(0.95, sum(rate(opsight_http_request_duration_seconds_bucket[5m])) by (le, route))",
+      "histogram_quantile(0.95, sum(rate(opsight_dependency_latency_seconds_bucket[5m])) by (le, dependency, operation))"
+    ],
+    "loki_queries": [
+      "{service=\"opsight-api\"} | json | scenario=\"high_latency\"",
+      "{service=\"opsight-api\"} | json | path=\"/api/v1/simulate/latency\""
+    ],
+    "tempo_traces": [
+      "trace_id=1294f055d7c8b0600ff6e7d797d5d0de"
+    ],
+    "correlation_ids": [
+      "latency-scenario-1"
+    ]
+  }
+}

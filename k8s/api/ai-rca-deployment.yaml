@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opsight-ai-rca
+  namespace: opsight
+  labels:
+    app: opsight-ai-rca
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: opsight-ai-rca
+  template:
+    metadata:
+      labels:
+        app: opsight-ai-rca
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - name: ai-rca
+          image: opsight/ai-rca:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8090
+          envFrom:
+            - configMapRef:
+                name: opsight-ai-rca-config
+          resources:
+            requests:
+              cpu: 100m
+              memory: 160Mi
+            limits:
+              cpu: 750m
+              memory: 768Mi
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 8090
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 8090
+            periodSeconds: 15
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sh", "-c", "sleep 5"]

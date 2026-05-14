@@ -1,0 +1,19 @@
+{
+  "uid": "opsight-docker-runtime",
+  "title": "OpsSight Docker Runtime",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "15s",
+  "tags": ["opsight", "docker", "cadvisor"],
+  "time": {"from": "now-1h", "to": "now"},
+  "panels": [
+    {"id": 1, "type": "stat", "title": "Docker Daemon Reachable", "gridPos": {"h": 4, "w": 4, "x": 0, "y": 0}, "targets": [{"expr": "opsight_docker_daemon_up", "refId": "A"}]},
+    {"id": 2, "type": "timeseries", "title": "Container CPU", "gridPos": {"h": 8, "w": 10, "x": 4, "y": 0}, "targets": [{"expr": "sum by (name) (rate(container_cpu_usage_seconds_total{name!=\"\"}[5m]))", "legendFormat": "{{name}}", "refId": "A"}]},
+    {"id": 3, "type": "timeseries", "title": "Container Memory Working Set", "gridPos": {"h": 8, "w": 10, "x": 14, "y": 0}, "targets": [{"expr": "container_memory_working_set_bytes{name!=\"\"}", "legendFormat": "{{name}}", "refId": "A"}], "fieldConfig": {"defaults": {"unit": "bytes"}, "overrides": []}},
+    {"id": 4, "type": "timeseries", "title": "Container Network Throughput", "gridPos": {"h": 8, "w": 8, "x": 0, "y": 8}, "targets": [{"expr": "sum by (name) (rate(container_network_receive_bytes_total{name!=\"\"}[5m]))", "legendFormat": "{{name}} rx", "refId": "A"}, {"expr": "sum by (name) (rate(container_network_transmit_bytes_total{name!=\"\"}[5m]))", "legendFormat": "{{name}} tx", "refId": "B"}], "fieldConfig": {"defaults": {"unit": "Bps"}, "overrides": []}},
+    {"id": 5, "type": "timeseries", "title": "Container Filesystem Growth", "gridPos": {"h": 8, "w": 8, "x": 8, "y": 8}, "targets": [{"expr": "container_fs_usage_bytes{name!=\"\"}", "legendFormat": "{{name}}", "refId": "A"}], "fieldConfig": {"defaults": {"unit": "bytes"}, "overrides": []}},
+    {"id": 6, "type": "bargauge", "title": "Restart Counts", "gridPos": {"h": 8, "w": 8, "x": 16, "y": 8}, "targets": [{"expr": "opsight_docker_container_restart_count", "legendFormat": "{{container}}", "refId": "A"}]},
+    {"id": 7, "type": "table", "title": "Container Health", "gridPos": {"h": 9, "w": 12, "x": 0, "y": 16}, "targets": [{"expr": "opsight_docker_container_health", "format": "table", "instant": true, "refId": "A"}]},
+    {"id": 8, "type": "table", "title": "Container State", "gridPos": {"h": 9, "w": 12, "x": 12, "y": 16}, "targets": [{"expr": "opsight_docker_container_state", "format": "table", "instant": true, "refId": "A"}]}
+  ]
+}

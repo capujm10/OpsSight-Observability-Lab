@@ -1,0 +1,36 @@
+groups:
+  - name: opsight-api-recording-rules
+    interval: 30s
+    rules:
+      - record: opsight:api_request_rate:5m
+        expr: sum(rate(opsight_http_requests_total[5m])) by (route, method)
+
+      - record: opsight:api_error_rate:5m
+        expr: sum(rate(opsight_http_requests_total{status_code=~"5.."}[5m])) / clamp_min(sum(rate(opsight_http_requests_total[5m])), 1)
+
+      - record: opsight:api_latency_p95:5m
+        expr: histogram_quantile(0.95, sum(rate(opsight_http_request_duration_seconds_bucket[5m])) by (le, route))
+
+      - record: opsight:dependency_latency_p95:5m
+        expr: histogram_quantile(0.95, sum(rate(opsight_dependency_latency_seconds_bucket[5m])) by (le, dependency, operation))
+
+      - record: opsight:sli_availability:5m
+        expr: 1 - ((sum(rate(opsight_http_requests_total{status_code=~"5.."}[5m])) or vector(0)) / clamp_min(sum(rate(opsight_http_requests_total[5m])), 1))
+
+      - record: opsight:sli_latency_compliance:5m
+        expr: sum(rate(opsight_http_request_duration_seconds_bucket{le="1.0"}[5m])) / clamp_min(sum(rate(opsight_http_request_duration_seconds_count[5m])), 1)
+
+      - record: opsight:sli_error_rate:5m
+        expr: (sum(rate(opsight_http_requests_total{status_code=~"5.."}[5m])) or vector(0)) / clamp_min(sum(rate(opsight_http_requests_total[5m])), 1)
+
+      - record: opsight:slo_error_budget_remaining:30d
+        expr: 1 - ((1 - opsight:sli_availability:5m) / 0.001)
+
+      - record: opsight:slo_availability_burn_rate:5m
+        expr: (1 - opsight:sli_availability:5m) / 0.001
+
+      - record: opsight:slo_availability_burn_rate:1h
+        expr: ((sum(rate(opsight_http_requests_total{status_code=~"5.."}[1h])) or vector(0)) / clamp_min(sum(rate(opsight_http_requests_total[1h])), 1)) / 0.001
+
+      - record: opsight:slo_availability_burn_rate:6h
+        expr: ((sum(rate(opsight_http_requests_total{status_code=~"5.."}[6h])) or vector(0)) / clamp_min(sum(rate(opsight_http_requests_total[6h])), 1)) / 0.001

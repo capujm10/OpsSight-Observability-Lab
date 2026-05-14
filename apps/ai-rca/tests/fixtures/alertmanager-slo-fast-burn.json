@@ -1,0 +1,38 @@
+{
+  "receiver": "opsight-ai-rca",
+  "status": "firing",
+  "alerts": [
+    {
+      "status": "firing",
+      "labels": {
+        "alertname": "OpsSightSLOFastBurn",
+        "severity": "critical",
+        "service": "opsight-api",
+        "slo": "availability-99.9",
+        "trace_id": "27a51aae7664ac0c0708c9af0ec80334",
+        "correlation_id": "trace-chain-check"
+      },
+      "annotations": {
+        "summary": "Availability SLO fast burn detected",
+        "description": "The service is consuming the 99.9% availability error budget at a fast-burn rate.",
+        "remediation": "Declare an incident, stop the failing release or traffic pattern, inspect top failing endpoints, and validate recovery."
+      },
+      "startsAt": "2026-05-14T04:11:56Z",
+      "endsAt": "0001-01-01T00:00:00Z",
+      "fingerprint": "slo-fast-burn-demo"
+    }
+  ],
+  "groupLabels": {
+    "alertname": "OpsSightSLOFastBurn"
+  },
+  "commonLabels": {
+    "service": "opsight-api"
+  },
+  "commonAnnotations": {
+    "summary": "Availability SLO fast burn detected"
+  },
+  "externalURL": "http://alertmanager:9093",
+  "version": "4",
+  "groupKey": "{}:{alertname=\"OpsSightSLOFastBurn\"}",
+  "truncatedAlerts": 0
+}

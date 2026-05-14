@@ -1,0 +1,62 @@
+{
+  "summary": "opsight-api experienced p95 latency around 1.80s and SLO burn rate near 120.0x and error rate near 12.00% originated from payment-gateway dependency degradation, impacting request reliability and incident response posture.",
+  "alert_explanation": "OpsSightSLOFastBurn fired for opsight-api at critical severity because burn-rate signal 120.0x, error ratio 12.00%, p95 latency 1.80s. Impacted SLOs: availability-99.9, api-p95-latency.",
+  "trace_analysis": "Slow spans: opsight-api -> payment-gateway authorize. Failed spans: payment-gateway authorize 503. Dependency timing should be inspected around payment-gateway spans for propagation into upstream API latency. Primary Tempo traces: 27a51aae7664ac0c0708c9af0ec80334.",
+  "log_analysis": "Repeated log patterns: dependency_unavailable, status_code=503. Exception signatures: DownstreamDependencyUnavailable. Correlation IDs for pivoting: trace-chain-check.",
+  "likely_root_causes": [
+    {
+      "cause": "payment-gateway latency or failure degradation",
+      "confidence": "high",
+      "supporting_signals": [
+        "dependency_unavailable",
+        "status_code=503",
+        "opsight-api -> payment-gateway authorize",
+        "burn_rate=120.0x"
+      ],
+      "impacted_systems": [
+        "opsight-api",
+        "payment-gateway"
+      ],
+      "validation_steps": [
+        "Open Tempo traces and inspect spans crossing from opsight-api to payment-gateway.",
+        "Compare dependency p95 latency against API p95 latency in Grafana.",
+        "Filter Loki logs by correlation_id and dependency error patterns."
+      ]
+    },
+    {
+      "cause": "Availability SLO fast burn from concentrated 5xx responses",
+      "confidence": "high",
+      "supporting_signals": [
+        "burn_rate=120.0x",
+        "error_rate=12.00%"
+      ],
+      "impacted_systems": [
+        "opsight-api"
+      ],
+      "validation_steps": [
+        "Check burn-rate panels over 5m and 1h windows.",
+        "Confirm top failing endpoints and status code distribution."
+      ]
+    }
+  ],
+  "impacted_slos": [
+    "availability-99.9",
+    "api-p95-latency"
+  ],
+  "recommended_actions": [
+    "Declare or maintain incident ownership until SLO recovery is visible.",
+    "Inspect payment-gateway health, saturation, and recent changes; apply fallback or traffic reduction if degraded.",
+    "Stop the failing traffic pattern or rollback the release causing elevated 5xx responses.",
+    "Reduce latency pressure by disabling expensive paths, throttling non-critical traffic, or scaling the saturated service.",
+    "Validate readiness probes and customer-facing synthetic checks.",
+    "Update the postmortem with verified telemetry before closure."
+  ],
+  "risk_notes": [
+    "AI output is an investigation aid; validate against Prometheus, Loki, Tempo, and deployment history.",
+    "Do not close the incident until recovery is visible in SLO windows and customer-facing checks."
+  ],
+  "provider": "rule_based",
+  "model": "deterministic-heuristics",
+  "fallback_used": false,
+  "confidence": "high"
+}

@@ -1,0 +1,30 @@
+{
+  "receiver": "opsight-ai-rca",
+  "status": "firing",
+  "alerts": [
+    {
+      "status": "firing",
+      "labels": {
+        "alertname": "OpsSightWslMemoryPressure",
+        "severity": "warning",
+        "service": "wsl2",
+        "domain": "workstation"
+      },
+      "annotations": {
+        "summary": "WSL2 memory pressure",
+        "description": "The WSL2 runtime backing Docker Desktop has elevated memory or CPU pressure.",
+        "remediation": "Stop non-critical containers, inspect .wslconfig limits, and validate memory recovery."
+      },
+      "startsAt": "2026-05-14T05:15:00Z",
+      "endsAt": "0001-01-01T00:00:00Z",
+      "fingerprint": "wsl-pressure-demo"
+    }
+  ],
+  "groupLabels": {"alertname": "OpsSightWslMemoryPressure"},
+  "commonLabels": {"service": "wsl2"},
+  "commonAnnotations": {"summary": "WSL2 memory pressure"},
+  "externalURL": "http://alertmanager:9093",
+  "version": "4",
+  "groupKey": "{}:{alertname=\"OpsSightWslMemoryPressure\"}",
+  "truncatedAlerts": 0
+}

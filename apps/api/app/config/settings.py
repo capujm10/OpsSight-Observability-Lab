@@ -1,0 +1,22 @@
+from functools import lru_cache
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    service_name: str = "opsight-api"
+    service_version: str = "1.0.0"
+    environment: str = "local"
+    log_level: str = "INFO"
+    otel_exporter_otlp_endpoint: str = "http://alloy:4317"
+    readiness_dependency_enabled: bool = True
+    dependency_url: str = "http://dependency:8080"
+    dependency_timeout_seconds: float = 2.0
+    latency_simulation_ms: int = 1500
+
+    model_config = SettingsConfigDict(env_file=".env", env_prefix="OPSIGHT_", extra="ignore")
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()

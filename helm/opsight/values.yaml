@@ -1,0 +1,41 @@
+environment: local
+
+api:
+  image:
+    repository: opsight/api
+    tag: local
+  replicas: 2
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+dependency:
+  image:
+    repository: opsight/payment-gateway
+    tag: local
+  replicas: 2
+
+aiRca:
+  enabled: true
+  image:
+    repository: opsight/ai-rca
+    tag: local
+  replicas: 1
+  provider: rule_based
+  model: llama3.2
+  baseUrl: http://ollama.local:11434
+  resources:
+    requests:
+      cpu: 100m
+      memory: 160Mi
+    limits:
+      cpu: 750m
+      memory: 768Mi
+
+observability:
+  otlpEndpoint: http://alloy:4317
+  prometheusRetention: 7d

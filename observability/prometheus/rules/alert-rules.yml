@@ -1,0 +1,283 @@
+groups:
+  - name: opsight-api-alerts
+    rules:
+      - alert: OpsSightApiUnavailable
+        expr: absent(up{job="opsight-api"}) or up{job="opsight-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: opsight-api
+        annotations:
+          summary: "OpsSight API is unavailable"
+          description: "Prometheus is not receiving application metrics. Probable causes: container crash, failed readiness, network path failure, or Alloy scrape failure."
+          remediation: "Run docker compose ps, inspect opsight-api logs, verify /health/ready, then restart the API if the process is unhealthy."
+
+      - alert: OpsSightElevated5xxResponses
+        expr: (sum(rate(opsight_http_requests_total{status_code=~"5.."}[5m])) or vector(0)) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+          service: opsight-api
+        annotations:
+          summary: "Elevated 5xx responses from OpsSight API"
+          description: "The API is returning server errors. Probable causes: simulated exceptions, downstream dependency failures, or unhandled application paths."
+          remediation: "Open the Incident Investigation dashboard, filter Loki logs by severity=ERROR, and pivot by trace_id into Tempo."
+
+      - alert: OpsSightHighP95Latency
+        expr: histogram_quantile(0.95, sum(rate(opsight_http_request_duration_seconds_bucket[5m])) by (le)) > 1
+        for: 2m
+        labels:
+          severity: warning
+          service: opsight-api
+        annotations:
+          summary: "OpsSight API p95 latency is above threshold"
+          description: "p95 latency exceeded 1 second. Probable causes: high latency simulation, dependency degradation, resource contention, or slow endpoint behavior."
+          remediation: "Compare endpoint latency panels, inspect dependency_latency metrics, then use Tempo to identify slow spans."
+
+      - alert: OpsSightDependencyDegradation
+        expr: histogram_quantile(0.95, sum(rate(opsight_dependency_latency_seconds_bucket[5m])) by (le, dependency)) > 0.8 or sum(rate(opsight_dependency_failures_total[5m])) > 0
+        for: 1m
+        labels:
+          severity: warning
+          service: opsight-api
+        annotations:
+          summary: "Downstream dependency is degraded"
+          description: "The simulated payment gateway is slow or failing. Probable causes: dependency outage, network degradation, saturation, or forced incident scenario."
+          remediation: "Review dependency spans in Tempo, check logs for dependency_unavailable, and apply fallback or retry mitigation."
+
+      - alert: OpsSightFailedReadinessChecks
+        expr: sum(rate(opsight_http_requests_total{route="/health/ready",status_code!~"2.."}[5m])) > 0
+        for: 1m
+        labels:
+          severity: critical
+          service: opsight-api
+        annotations:
+          summary: "OpsSight API readiness checks are failing"
+          description: "Readiness failures indicate the API should be removed from serving rotation."
+          remediation: "Check dependency configuration, inspect recent deployment changes, and keep traffic drained until /health/ready returns 200."
+
+      - alert: OpsSightExcessiveErrorRate
+        expr: ((sum(rate(opsight_http_requests_total{status_code=~"5.."}[5m])) or vector(0)) / clamp_min(sum(rate(opsight_http_requests_total[5m])), 1)) > 0.05
+        for: 3m
+        labels:
+          severity: critical
+          service: opsight-api
+        annotations:
+          summary: "OpsSight API error ratio exceeds 5 percent"
+          description: "The request error ratio crossed the production-style incident threshold."
+          remediation: "Correlate status_code=500 logs with trace_id, isolate the affected route, and roll back or disable the triggering behavior."
+
+      - alert: OpsSightSLOFastBurn
+        expr: opsight:slo_availability_burn_rate:5m > 14 and opsight:slo_availability_burn_rate:1h > 14
+        for: 2m
+        labels:
+          severity: critical
+          service: opsight-api
+          slo: availability-99.9
+        annotations:
+          summary: "Availability SLO fast burn detected"
+          description: "The service is consuming the 99.9% availability error budget at a fast-burn rate across short and medium windows."
+          remediation: "Declare an incident, stop the failing release or traffic pattern, inspect top failing endpoints, and validate recovery before closing."
+
+      - alert: OpsSightSLOSlowBurn
+        expr: opsight:slo_availability_burn_rate:1h > 3 and opsight:slo_availability_burn_rate:6h > 3
+        for: 15m
+        labels:
+          severity: warning
+          service: opsight-api
+          slo: availability-99.9
+        annotations:
+          summary: "Availability SLO slow burn detected"
+          description: "The service is steadily consuming error budget and may breach the monthly objective if the trend continues."
+          remediation: "Review recurring errors, dependency health, and release history. Prioritize corrective work over feature delivery if budget remains low."
+
+      - alert: OpsSightPaymentGatewayErrors
+        expr: (sum(rate(opsight_payment_requests_total{status_code=~"5.."}[5m])) or vector(0)) > 0
+        for: 1m
+        labels:
+          severity: warning
+          service: payment-gateway
+        annotations:
+          summary: "Payment gateway dependency is returning errors"
+          description: "The downstream payment-gateway service is producing server-side failures."
+          remediation: "Open Tempo service traces, inspect payment-gateway logs, and determine whether API failures are dependency-induced."
+
+      - alert: OpsSightAiRcaUnavailable
+        expr: absent(up{job="opsight-ai-rca"}) or up{job="opsight-ai-rca"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          service: opsight-ai-rca
+        annotations:
+          summary: "AI RCA service is unavailable"
+          description: "The operational intelligence layer cannot currently generate incident summaries or postmortem enrichment."
+          remediation: "Check opsight-ai-rca container health, verify /health/ready, and confirm Alloy can scrape /metrics."
+
+      - alert: OpsSightAiRcaProviderFallback
+        expr: sum(rate(opsight_ai_rca_provider_failures_total[5m])) by (provider) > 0
+        for: 1m
+        labels:
+          severity: info
+          service: opsight-ai-rca
+        annotations:
+          summary: "AI RCA provider fallback is active"
+          description: "A configured LLM provider failed and the service fell back to deterministic rule-based RCA."
+          remediation: "For local LLM mode, verify Ollama or LM Studio is running and reachable from the container. Rule-based RCA remains available for deterministic demos."
+
+  - name: opsight-workstation-alerts
+    rules:
+      - alert: OpsSightWindowsExporterDown
+        expr: absent(up{job="windows-exporter"}) or up{job="windows-exporter"} == 0
+        for: 5m
+        labels:
+          severity: warning
+          service: windows-host
+          domain: workstation
+        annotations:
+          summary: "Windows host telemetry is unavailable"
+          description: "Prometheus cannot scrape windows_exporter on host.docker.internal:9182. Windows CPU, memory, disk, service, TCP, and process telemetry may be missing."
+          remediation: "Verify windows_exporter or the Windows Alloy service is running as Administrator and that TCP/9182 is reachable from Docker Desktop."
+
+      - alert: OpsSightWindowsCpuSaturation
+        expr: 100 - (avg by (instance) (rate(windows_cpu_time_total{mode="idle"}[5m])) * 100) > 85
+        for: 10m
+        labels:
+          severity: warning
+          service: windows-host
+          domain: workstation
+        annotations:
+          summary: "Windows host CPU saturation"
+          description: "Windows CPU utilization has remained above 85 percent for 10 minutes."
+          remediation: "Inspect per-core CPU, top processes, Docker Desktop resource limits, and WSL2 workloads before restarting services."
+
+      - alert: OpsSightWindowsDiskPressure
+        expr: (windows_logical_disk_free_bytes{volume!~"HarddiskVolume.+"} / windows_logical_disk_size_bytes{volume!~"HarddiskVolume.+"}) < 0.10
+        for: 10m
+        labels:
+          severity: critical
+          service: windows-host
+          domain: workstation
+        annotations:
+          summary: "Windows disk free space below 10 percent"
+          description: "A Windows filesystem is under disk pressure and may cause Docker Desktop, WSL2, logs, or model downloads to fail."
+          remediation: "Clean build artifacts, Docker images, WSL distributions, Loki chunks, and unused Ollama models; then validate free space recovery."
+
+      - alert: OpsSightWindowsServiceFailure
+        expr: windows_service_state{state="running",name=~"docker|com.docker.service|vmcompute|LxssManager|GrafanaAlloy|alloy|WinDefend"} == 0
+        for: 3m
+        labels:
+          severity: warning
+          service: windows-host
+          domain: workstation
+        annotations:
+          summary: "Critical Windows workstation service is not running"
+          description: "A service needed for workstation observability, Docker Desktop, WSL2, or host security is stopped."
+          remediation: "Use services.msc or Get-Service to inspect the named service and review System event logs before restarting it."
+
+      - alert: OpsSightDockerContainerUnhealthy
+        expr: opsight_docker_container_health == 0
+        for: 2m
+        labels:
+          severity: warning
+          service: docker-desktop
+          domain: docker
+        annotations:
+          summary: "A local Docker container is unhealthy"
+          description: "Docker reports at least one local container healthcheck as unhealthy."
+          remediation: "Run docker compose ps, inspect the unhealthy container logs, and correlate with cAdvisor CPU and memory panels."
+
+      - alert: OpsSightDockerContainerRestarting
+        expr: increase(opsight_docker_container_restart_count[10m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+          service: docker-desktop
+          domain: docker
+        annotations:
+          summary: "Local Docker container restart detected"
+          description: "A local container restart occurred in the last 10 minutes."
+          remediation: "Inspect container exit code and logs, then pivot to memory, CPU, disk, or dependency failure metrics."
+
+      - alert: OpsSightContainerMemoryPressure
+        expr: (container_memory_working_set_bytes{name!=""} / clamp_min(container_spec_memory_limit_bytes{name!=""}, 1)) > 0.90
+        for: 5m
+        labels:
+          severity: warning
+          service: docker-desktop
+          domain: docker
+        annotations:
+          summary: "Container memory saturation"
+          description: "A container is using more than 90 percent of its configured memory limit."
+          remediation: "Reduce workload, inspect heap/process growth, or raise the Docker Desktop/Compose memory limit only after identifying the source."
+
+      - alert: OpsSightWslMemoryPressure
+        expr: 1 - (opsight_wsl_memory_bytes{type="MemAvailable"} / opsight_wsl_memory_bytes{type="MemTotal"}) > 0.90
+        for: 5m
+        labels:
+          severity: warning
+          service: wsl2
+          domain: wsl2
+        annotations:
+          summary: "WSL2 memory pressure"
+          description: "The Linux runtime backing Docker Desktop or local WSL workloads has low available memory."
+          remediation: "Stop non-critical containers, reduce load generation, check .wslconfig limits, and validate memory recovery."
+
+      - alert: OpsSightOllamaUnavailable
+        expr: opsight_ollama_up == 0
+        for: 5m
+        labels:
+          severity: info
+          service: ollama
+          domain: ai-runtime
+        annotations:
+          summary: "Ollama endpoint is unavailable"
+          description: "The local AI runtime exporter cannot reach the configured Ollama API endpoint."
+          remediation: "Start Ollama, verify OLLAMA_BASE_URL, and confirm host.docker.internal:11434 is reachable from the OpsSight network."
+
+      - alert: OpsSightOllamaLatencySpike
+        expr: histogram_quantile(0.95, sum(rate(opsight_ollama_request_duration_seconds_bucket[5m])) by (le, model)) > 15
+        for: 5m
+        labels:
+          severity: warning
+          service: ollama
+          domain: ai-runtime
+        annotations:
+          summary: "Ollama inference latency spike"
+          description: "Instrumented local LLM inference p95 latency exceeded 15 seconds."
+          remediation: "Check active model size, GPU/VRAM pressure, CPU fallback, prompt size, and concurrent local workloads."
+
+      - alert: OpsSightGpuVramPressure
+        expr: (opsight_gpu_memory_bytes{type="used"} / opsight_gpu_memory_bytes{type="total"}) > 0.90
+        for: 5m
+        labels:
+          severity: warning
+          service: gpu
+          domain: ai-runtime
+        annotations:
+          summary: "GPU VRAM pressure"
+          description: "NVIDIA VRAM usage is above 90 percent and may force local inference to slow down or fall back to CPU."
+          remediation: "Unload unused models, lower model size/context, stop competing GPU workloads, and confirm inference latency recovers."
+
+      - alert: OpsSightKubernetesPodRestarting
+        expr: increase(kube_pod_container_status_restarts_total[10m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+          service: kubernetes
+          domain: kubernetes
+        annotations:
+          summary: "Local Kubernetes pod restart detected"
+          description: "A pod in the local cluster restarted within the last 10 minutes."
+          remediation: "Inspect pod events, CrashLoopBackOff state, resource limits, and recent deployments in the affected namespace."
+
+      - alert: OpsSightKubernetesCrashLoopBackOff
+        expr: kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff"} == 1
+        for: 2m
+        labels:
+          severity: critical
+          service: kubernetes
+          domain: kubernetes
+        annotations:
+          summary: "Local Kubernetes workload is in CrashLoopBackOff"
+          description: "kube-state-metrics reports a container waiting in CrashLoopBackOff."
+          remediation: "Run kubectl describe pod, inspect previous logs, compare resource saturation, and roll back the failing workload if needed."

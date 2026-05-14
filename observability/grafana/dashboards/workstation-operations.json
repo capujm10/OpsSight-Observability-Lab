@@ -1,0 +1,23 @@
+{
+  "uid": "opsight-workstation-operations",
+  "title": "OpsSight Workstation Operations",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "15s",
+  "tags": ["opsight", "workstation", "windows", "wsl2"],
+  "time": {"from": "now-1h", "to": "now"},
+  "panels": [
+    {"id": 1, "type": "stat", "title": "Windows Exporter Up", "gridPos": {"h": 4, "w": 4, "x": 0, "y": 0}, "targets": [{"expr": "up{job=\"windows-exporter\"}", "refId": "A"}]},
+    {"id": 2, "type": "timeseries", "title": "Windows CPU Utilization", "gridPos": {"h": 8, "w": 8, "x": 4, "y": 0}, "targets": [{"expr": "100 - (avg by (instance) (rate(windows_cpu_time_total{mode=\"idle\"}[5m])) * 100)", "legendFormat": "{{instance}}", "refId": "A"}], "fieldConfig": {"defaults": {"unit": "percent"}, "overrides": []}},
+    {"id": 3, "type": "timeseries", "title": "Windows Per-Core CPU", "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}, "targets": [{"expr": "100 - (rate(windows_cpu_time_total{mode=\"idle\",core!=\"_Total\"}[5m]) * 100)", "legendFormat": "core {{core}}", "refId": "A"}], "fieldConfig": {"defaults": {"unit": "percent"}, "overrides": []}},
+    {"id": 4, "type": "timeseries", "title": "Windows Memory and Pagefile", "gridPos": {"h": 8, "w": 8, "x": 0, "y": 8}, "targets": [{"expr": "windows_os_physical_memory_free_bytes", "legendFormat": "free physical", "refId": "A"}, {"expr": "windows_memory_commit_limit - windows_memory_committed_bytes", "legendFormat": "commit remaining", "refId": "B"}], "fieldConfig": {"defaults": {"unit": "bytes"}, "overrides": []}},
+    {"id": 5, "type": "timeseries", "title": "Windows Disk Free", "gridPos": {"h": 8, "w": 8, "x": 8, "y": 8}, "targets": [{"expr": "windows_logical_disk_free_bytes{volume!~\"HarddiskVolume.+\"}", "legendFormat": "{{volume}} free", "refId": "A"}], "fieldConfig": {"defaults": {"unit": "bytes"}, "overrides": []}},
+    {"id": 6, "type": "timeseries", "title": "Windows Disk IO and Latency", "gridPos": {"h": 8, "w": 8, "x": 16, "y": 8}, "targets": [{"expr": "rate(windows_logical_disk_read_bytes_total[5m]) + rate(windows_logical_disk_write_bytes_total[5m])", "legendFormat": "{{volume}} bytes/s", "refId": "A"}, {"expr": "rate(windows_logical_disk_avg_read_latency_seconds_total[5m]) + rate(windows_logical_disk_avg_write_latency_seconds_total[5m])", "legendFormat": "{{volume}} latency", "refId": "B"}]},
+    {"id": 7, "type": "timeseries", "title": "Windows Network Throughput", "gridPos": {"h": 8, "w": 8, "x": 0, "y": 16}, "targets": [{"expr": "rate(windows_net_bytes_received_total[5m])", "legendFormat": "{{nic}} rx", "refId": "A"}, {"expr": "rate(windows_net_bytes_sent_total[5m])", "legendFormat": "{{nic}} tx", "refId": "B"}], "fieldConfig": {"defaults": {"unit": "Bps"}, "overrides": []}},
+    {"id": 8, "type": "timeseries", "title": "TCP Connections", "gridPos": {"h": 8, "w": 8, "x": 8, "y": 16}, "targets": [{"expr": "windows_tcp_connections_established", "legendFormat": "established", "refId": "A"}]},
+    {"id": 9, "type": "table", "title": "Critical Windows Services", "gridPos": {"h": 8, "w": 8, "x": 16, "y": 16}, "targets": [{"expr": "windows_service_state{name=~\"docker|com.docker.service|vmcompute|LxssManager|GrafanaAlloy|alloy\",state=\"running\"}", "format": "table", "instant": true, "refId": "A"}]},
+    {"id": 10, "type": "timeseries", "title": "WSL2 Memory", "gridPos": {"h": 8, "w": 8, "x": 0, "y": 24}, "targets": [{"expr": "opsight_wsl_memory_bytes", "legendFormat": "{{type}}", "refId": "A"}], "fieldConfig": {"defaults": {"unit": "bytes"}, "overrides": []}},
+    {"id": 11, "type": "timeseries", "title": "WSL2 Load Average", "gridPos": {"h": 8, "w": 8, "x": 8, "y": 24}, "targets": [{"expr": "opsight_wsl_load_average", "legendFormat": "{{window}}", "refId": "A"}]},
+    {"id": 12, "type": "logs", "title": "Windows Event Logs", "gridPos": {"h": 8, "w": 8, "x": 16, "y": 24}, "targets": [{"expr": "{job=\"windows-eventlog\"} | json", "refId": "A", "datasource": {"type": "loki", "uid": "Loki"}}]}
+  ]
+}

@@ -1,0 +1,115 @@
+{
+  "id": "INC-2026-05-14-002",
+  "template": "slo-burn-incident",
+  "title": "Availability error budget fast burn during dependency failure burst",
+  "severity": "SEV-1",
+  "status": "Resolved",
+  "type": "SLO burn incident",
+  "owner": "SRE",
+  "incident_commander": "Principal SRE",
+  "started_at": "2026-05-14T04:11:56Z",
+  "resolved_at": "2026-05-14T04:18:20Z",
+  "impact_summary": "A concentrated burst of dependency-induced 503 responses drove the availability burn rate well above the fast-burn threshold for the 99.9% API availability SLO.",
+  "affected_systems": [
+    "opsight-api availability SLO",
+    "payment-gateway dependency",
+    "Prometheus burn-rate alerts"
+  ],
+  "customer_impact": "A subset of order requests failed while dependency-backed operations were unhealthy. Existing successful orders were unaffected, but users relying on the order API experienced failed requests until the failure burst stopped.",
+  "detection_method": "Multi-window SLO burn-rate alerting in Prometheus.",
+  "alert_triggered": "OpsSightSLOFastBurn",
+  "slo_burn": "5m burn rate reached approximately 120x; 1h burn rate exceeded the fast-burn threshold after repeated 503s.",
+  "timeline": [
+    {
+      "timestamp": "2026-05-14T04:11:56Z",
+      "stage": "incident_start",
+      "event": "OpsSightSLOFastBurn entered pending after availability burn exceeded threshold."
+    },
+    {
+      "timestamp": "2026-05-14T04:13:26Z",
+      "event": "Fast-burn alert entered firing state."
+    },
+    {
+      "timestamp": "2026-05-14T04:14:05Z",
+      "event": "SRE Overview confirmed error budget remaining was being consumed rapidly."
+    },
+    {
+      "timestamp": "2026-05-14T04:14:45Z",
+      "event": "Top failing endpoint analysis identified dependency-failure route as dominant bad-event source."
+    },
+    {
+      "timestamp": "2026-05-14T04:15:15Z",
+      "stage": "mitigation_deployed",
+      "event": "Failure scenario traffic stopped and baseline smoke traffic resumed."
+    },
+    {
+      "timestamp": "2026-05-14T04:18:20Z",
+      "stage": "recovery_confirmed",
+      "event": "No new 503 burst observed; burn-rate trend began decreasing."
+    }
+  ],
+  "contributing_factors": [
+    "Repeated forced dependency failures produced a dense bad-event window.",
+    "The fast-burn alert used a realistic threshold requiring enough sustained bad events to avoid noise.",
+    "The API correctly preserved dependency failure semantics instead of hiding failures."
+  ],
+  "root_cause": "The 99.9% availability error budget was rapidly consumed by a controlled dependency-failure burst that generated sustained 503 responses from API routes dependent on payment-gateway.",
+  "mitigation_steps": [
+    "Stopped the synthetic dependency failure generator.",
+    "Confirmed payment-gateway health was green after traffic stopped.",
+    "Ran smoke tests to verify the API and dependency were reachable.",
+    "Checked SLO burn-rate panels for recovery trend."
+  ],
+  "resolution": "The incident was resolved after failure generation stopped and successful requests dominated the rolling burn windows.",
+  "recovery_validation": [
+    "OpsSightSLOFastBurn was observed firing from real telemetry.",
+    "Smoke test passed after mitigation.",
+    "Cross-service traces showed successful payment-gateway spans.",
+    "Prometheus up metrics remained healthy for both services."
+  ],
+  "preventive_actions": [
+    "Document a policy for pausing feature work when remaining budget drops below threshold.",
+    "Add projected budget exhaustion panel to the SRE Overview dashboard.",
+    "Add runbook links directly in alert annotations."
+  ],
+  "follow_up_tasks": [
+    {
+      "task": "Add explicit SLO freeze policy to docs/slo-error-budget.md.",
+      "owner": "SRE",
+      "priority": "P1",
+      "status": "Open"
+    },
+    {
+      "task": "Add projected exhaustion calculation to dashboard roadmap.",
+      "owner": "Observability",
+      "priority": "P2",
+      "status": "Open"
+    }
+  ],
+  "lessons_learned": [
+    "Burn-rate alerts provide stronger operational signal than raw 5xx alerts during concentrated failure bursts.",
+    "SLO panels must be close to incident dashboards so responders can evaluate user impact quickly."
+  ],
+  "telemetry": {
+    "grafana_dashboards": [
+      "OpsSight SRE Overview: /d/opsight-sre-overview/opsight-sre-overview",
+      "OpsSight API Golden Signals: /d/opsight-api-golden-signals/opsight-api-golden-signals"
+    ],
+    "prometheus_queries": [
+      "opsight:slo_availability_burn_rate:5m",
+      "opsight:slo_availability_burn_rate:1h",
+      "opsight:slo_error_budget_remaining:30d",
+      "sum(rate(opsight_http_requests_total{status_code=~\"5..\"}[5m]))"
+    ],
+    "loki_queries": [
+      "{service=\"opsight-api\",severity=\"ERROR\"} | json",
+      "{service=\"opsight-api\"} | json | status_code=\"503\""
+    ],
+    "tempo_traces": [
+      "trace_id=27a51aae7664ac0c0708c9af0ec80334"
+    ],
+    "correlation_ids": [
+      "trace-chain-check"
+    ]
+  }
+}

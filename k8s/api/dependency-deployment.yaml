@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-gateway
+  namespace: opsight
+  labels:
+    app: payment-gateway
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: payment-gateway
+  template:
+    metadata:
+      labels:
+        app: payment-gateway
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - name: payment-gateway
+          image: opsight/payment-gateway:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: DEPENDENCY_ENVIRONMENT
+              value: kubernetes
+            - name: DEPENDENCY_OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://alloy:4317
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 8080
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 8080

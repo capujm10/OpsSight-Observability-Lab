@@ -1,0 +1,30 @@
+{
+  "receiver": "opsight-ai-rca",
+  "status": "firing",
+  "alerts": [
+    {
+      "status": "firing",
+      "labels": {
+        "alertname": "OpsSightGpuVramPressure",
+        "severity": "warning",
+        "service": "gpu",
+        "domain": "ai-runtime"
+      },
+      "annotations": {
+        "summary": "GPU VRAM pressure",
+        "description": "GPU VRAM usage is above 90 percent and may force Ollama inference to fall back to CPU.",
+        "remediation": "Unload unused models, lower context size, stop competing GPU workloads, and confirm latency recovery."
+      },
+      "startsAt": "2026-05-14T05:25:00Z",
+      "endsAt": "0001-01-01T00:00:00Z",
+      "fingerprint": "gpu-vram-demo"
+    }
+  ],
+  "groupLabels": {"alertname": "OpsSightGpuVramPressure"},
+  "commonLabels": {"service": "gpu"},
+  "commonAnnotations": {"summary": "GPU VRAM pressure"},
+  "externalURL": "http://alertmanager:9093",
+  "version": "4",
+  "groupKey": "{}:{alertname=\"OpsSightGpuVramPressure\"}",
+  "truncatedAlerts": 0
+}

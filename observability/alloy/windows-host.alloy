@@ -1,0 +1,106 @@
+logging {
+  level  = "info"
+  format = "logfmt"
+}
+
+livedebugging {
+  enabled = true
+}
+
+prometheus.exporter.windows "default" {
+  enabled_collectors = [
+    "cpu",
+    "cs",
+    "logical_disk",
+    "memory",
+    "net",
+    "os",
+    "process",
+    "service",
+    "system",
+    "tcp",
+  ]
+}
+
+prometheus.scrape "windows_host" {
+  targets         = prometheus.exporter.windows.default.targets
+  scrape_interval = "15s"
+  forward_to      = [prometheus.remote_write.opsight.receiver]
+}
+
+prometheus.remote_write "opsight" {
+  endpoint {
+    url = "http://localhost:9090/api/v1/write"
+  }
+}
+
+loki.source.windowsevent "application" {
+  eventlog_name           = "Application"
+  use_incoming_timestamp = true
+  labels = {
+    job         = "windows-eventlog",
+    eventlog    = "Application",
+    host_domain = "windows",
+  }
+  forward_to = [loki.process.windows_events.receiver]
+}
+
+loki.source.windowsevent "system" {
+  eventlog_name           = "System"
+  use_incoming_timestamp = true
+  labels = {
+    job         = "windows-eventlog",
+    eventlog    = "System",
+    host_domain = "windows",
+  }
+  forward_to = [loki.process.windows_events.receiver]
+}
+
+loki.process "windows_events" {
+  stage.json {
+    expressions = {
+      message             = "",
+      source              = "",
+      computer            = "",
+      eventRecordID       = "",
+      channel             = "",
+      levelText           = "",
+      execution_processId = "",
+      execution_threadId  = "",
+    }
+  }
+
+  stage.eventlogmessage {
+    source             = "message"
+    overwrite_existing = true
+  }
+
+  stage.labels {
+    values = {
+      service_name = "source",
+      severity     = "levelText",
+      computer     = "computer",
+    }
+  }
+
+  stage.structured_metadata {
+    values = {
+      eventRecordID       = "",
+      channel             = "",
+      execution_processId = "",
+      execution_threadId  = "",
+    }
+  }
+
+  stage.output {
+    source = "message"
+  }
+
+  forward_to = [loki.write.opsight.receiver]
+}
+
+loki.write "opsight" {
+  endpoint {
+    url = "http://localhost:3100/loki/api/v1/push"
+  }
+}

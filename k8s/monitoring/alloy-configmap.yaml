@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alloy-config
+  namespace: opsight
+data:
+  config.alloy: |
+    // Placeholder for the Docker Compose Alloy configuration adapted to Kubernetes discovery.
+    // In production, run Alloy as a DaemonSet for logs and a Deployment for OTLP ingestion.

@@ -1,0 +1,125 @@
+logging {
+  level  = "info"
+  format = "logfmt"
+}
+
+otelcol.receiver.otlp "default" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+  output {
+    traces = [otelcol.processor.batch.default.input]
+  }
+}
+
+otelcol.processor.batch "default" {
+  output {
+    traces = [otelcol.exporter.otlp.tempo.input]
+  }
+}
+
+otelcol.exporter.otlp "tempo" {
+  client {
+    endpoint = "tempo:4317"
+    tls {
+      insecure = true
+    }
+  }
+}
+
+prometheus.scrape "api" {
+  targets = [
+    {"__address__" = "api:8000", "job" = "opsight-api", "service" = "opsight-api"},
+    {"__address__" = "dependency:8080", "job" = "payment-gateway", "service" = "payment-gateway"},
+    {"__address__" = "ai-rca:8090", "job" = "opsight-ai-rca", "service" = "opsight-ai-rca"},
+    {"__address__" = "local-runtime-exporter:9108", "job" = "local-runtime-exporter", "service" = "local-runtime-exporter"},
+  ]
+  metrics_path = "/metrics"
+  scrape_interval = "10s"
+  forward_to = [prometheus.remote_write.prometheus.receiver]
+}
+
+prometheus.exporter.cadvisor "local_containers" {
+  docker_host = "unix:///var/run/docker.sock"
+
+  storage_duration = "5m"
+}
+
+prometheus.scrape "cadvisor" {
+  targets = prometheus.exporter.cadvisor.local_containers.targets
+  scrape_interval = "10s"
+  forward_to = [prometheus.remote_write.prometheus.receiver]
+}
+
+prometheus.remote_write "prometheus" {
+  endpoint {
+    url = "http://prometheus:9090/api/v1/write"
+  }
+}
+
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+discovery.relabel "docker_logs" {
+  targets = discovery.docker.containers.targets
+
+  rule {
+    source_labels = ["__meta_docker_container_label_service"]
+    regex = "opsight-api|payment-gateway|opsight-ai-rca"
+    action = "keep"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    target_label = "container"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_service"]
+    target_label = "service"
+  }
+}
+
+loki.source.docker "api" {
+  host = "unix:///var/run/docker.sock"
+  targets = discovery.relabel.docker_logs.output
+  labels = {
+    job = "opsight-services",
+    environment = "local",
+  }
+  forward_to = [loki.process.api.receiver]
+}
+
+loki.process "api" {
+  stage.json {
+    expressions = {
+      severity = "severity",
+      component = "component",
+      correlation_id = "correlation_id",
+      trace_id = "trace_id",
+      path = "path",
+      status_code = "status_code",
+    }
+  }
+
+  stage.labels {
+    values = {
+      severity = "",
+      component = "",
+      path = "",
+      status_code = "",
+    }
+  }
+
+  forward_to = [loki.write.default.receiver]
+}
+
+loki.write "default" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}

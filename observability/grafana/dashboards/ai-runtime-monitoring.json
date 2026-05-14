@@ -1,0 +1,21 @@
+{
+  "uid": "opsight-ai-runtime-monitoring",
+  "title": "OpsSight AI Runtime Monitoring",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "15s",
+  "tags": ["opsight", "ollama", "gpu", "ai-runtime"],
+  "time": {"from": "now-1h", "to": "now"},
+  "panels": [
+    {"id": 1, "type": "stat", "title": "Ollama Reachable", "gridPos": {"h": 4, "w": 4, "x": 0, "y": 0}, "targets": [{"expr": "opsight_ollama_up", "refId": "A"}]},
+    {"id": 2, "type": "stat", "title": "GPU Telemetry Available", "gridPos": {"h": 4, "w": 4, "x": 4, "y": 0}, "targets": [{"expr": "opsight_gpu_telemetry_available", "refId": "A"}]},
+    {"id": 3, "type": "timeseries", "title": "Ollama p95 Latency", "gridPos": {"h": 8, "w": 8, "x": 8, "y": 0}, "targets": [{"expr": "histogram_quantile(0.95, sum(rate(opsight_ollama_request_duration_seconds_bucket[5m])) by (le, model))", "legendFormat": "{{model}}", "refId": "A"}], "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []}},
+    {"id": 4, "type": "timeseries", "title": "Token Throughput", "gridPos": {"h": 8, "w": 8, "x": 16, "y": 0}, "targets": [{"expr": "opsight_ollama_tokens_per_second", "legendFormat": "{{model}}", "refId": "A"}]},
+    {"id": 5, "type": "timeseries", "title": "Inference Requests and Failures", "gridPos": {"h": 8, "w": 8, "x": 0, "y": 8}, "targets": [{"expr": "sum by (model, status) (rate(opsight_ollama_requests_total[5m]))", "legendFormat": "{{model}} {{status}}", "refId": "A"}, {"expr": "sum by (model, reason) (rate(opsight_ollama_failures_total[5m]))", "legendFormat": "{{model}} {{reason}}", "refId": "B"}]},
+    {"id": 6, "type": "timeseries", "title": "Active Models", "gridPos": {"h": 8, "w": 8, "x": 8, "y": 8}, "targets": [{"expr": "opsight_ollama_active_models", "legendFormat": "{{model}}", "refId": "A"}]},
+    {"id": 7, "type": "timeseries", "title": "Model Load Time", "gridPos": {"h": 8, "w": 8, "x": 16, "y": 8}, "targets": [{"expr": "opsight_ollama_model_load_seconds", "legendFormat": "{{model}}", "refId": "A"}], "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []}},
+    {"id": 8, "type": "timeseries", "title": "GPU Utilization and VRAM", "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16}, "targets": [{"expr": "opsight_gpu_utilization_percent", "legendFormat": "{{name}} util", "refId": "A"}, {"expr": "100 * opsight_gpu_memory_bytes{type=\"used\"} / clamp_min(opsight_gpu_memory_bytes{type=\"total\"}, 1)", "legendFormat": "{{name}} vram", "refId": "B"}], "fieldConfig": {"defaults": {"unit": "percent"}, "overrides": []}},
+    {"id": 9, "type": "timeseries", "title": "GPU Temperature and Power", "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16}, "targets": [{"expr": "opsight_gpu_temperature_celsius", "legendFormat": "{{name}} C", "refId": "A"}, {"expr": "opsight_gpu_power_watts", "legendFormat": "{{name}} W", "refId": "B"}]},
+    {"id": 10, "type": "timeseries", "title": "CPU Fallback / WSL Memory Pressure", "gridPos": {"h": 8, "w": 24, "x": 0, "y": 24}, "targets": [{"expr": "1 - (opsight_wsl_memory_bytes{type=\"MemAvailable\"} / opsight_wsl_memory_bytes{type=\"MemTotal\"})", "legendFormat": "WSL memory pressure", "refId": "A"}, {"expr": "opsight_wsl_load_average{window=\"1m\"}", "legendFormat": "WSL load 1m", "refId": "B"}]}
+  ]
+}

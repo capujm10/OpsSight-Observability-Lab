@@ -1,0 +1,30 @@
+{
+  "receiver": "opsight-ai-rca",
+  "status": "firing",
+  "alerts": [
+    {
+      "status": "firing",
+      "labels": {
+        "alertname": "OpsSightWindowsDiskPressure",
+        "severity": "critical",
+        "service": "windows-host",
+        "domain": "workstation"
+      },
+      "annotations": {
+        "summary": "Windows disk free space below 10 percent",
+        "description": "A Windows filesystem is under pressure and can destabilize Docker Desktop, WSL2, Loki, or model downloads.",
+        "remediation": "Clean build artifacts, Docker images, WSL distributions, Loki chunks, and unused Ollama models."
+      },
+      "startsAt": "2026-05-14T05:20:00Z",
+      "endsAt": "0001-01-01T00:00:00Z",
+      "fingerprint": "workstation-disk-demo"
+    }
+  ],
+  "groupLabels": {"alertname": "OpsSightWindowsDiskPressure"},
+  "commonLabels": {"service": "windows-host"},
+  "commonAnnotations": {"summary": "Windows disk free space below 10 percent"},
+  "externalURL": "http://alertmanager:9093",
+  "version": "4",
+  "groupKey": "{}:{alertname=\"OpsSightWindowsDiskPressure\"}",
+  "truncatedAlerts": 0
+}

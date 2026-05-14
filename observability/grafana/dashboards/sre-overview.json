@@ -1,0 +1,53 @@
+{
+  "uid": "opsight-sre-overview",
+  "title": "OpsSight SRE Overview",
+  "description": "Executive and SRE-level operational overview for availability, RED metrics, dependency health, SLO burn, AI-assisted RCA posture, and current incident posture.",
+  "tags": ["opsight", "sre", "slo", "aiops", "executive-overview"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": {"from": "now-6h", "to": "now"},
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {"type": "grafana", "uid": "-- Grafana --"},
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      },
+      {
+        "datasource": {"type": "loki", "uid": "loki"},
+        "enable": true,
+        "expr": "{service=~\"opsight-api|payment-gateway\"} | json | incident_stage =~ \"incident_start|mitigation_deployed|recovery_confirmed\"",
+        "iconColor": "orange",
+        "name": "Incident lifecycle annotations",
+        "textFormat": "{{message}}",
+        "titleFormat": "{{incident_stage}}"
+      }
+    ]
+  },
+  "panels": [
+    {"id": 1, "type": "text", "title": "OpsSight Service Posture", "description": "Operational banner for on-call and SRE review.", "gridPos": {"x": 0, "y": 0, "w": 24, "h": 3}, "options": {"mode": "markdown", "content": "### OpsSight Observability Lab\\nEnterprise SRE overview for service health, SLO compliance, dependency posture, active incidents, AI-assisted RCA readiness, and error budget consumption."}},
+    {"id": 2, "type": "stat", "title": "Availability SLI", "description": "Successful requests as a ratio of all API requests. Objective: 99.9%.", "datasource": {"type": "prometheus", "uid": "prometheus"}, "gridPos": {"x": 0, "y": 3, "w": 4, "h": 4}, "targets": [{"refId": "A", "expr": "opsight:sli_availability:5m"}], "fieldConfig": {"defaults": {"unit": "percentunit", "thresholds": {"steps": [{"color": "red"}, {"color": "orange", "value": 0.995}, {"color": "green", "value": 0.999}]}}}},
+    {"id": 3, "type": "stat", "title": "Throughput", "description": "Current request volume across API routes.", "datasource": {"type": "prometheus", "uid": "prometheus"}, "gridPos": {"x": 4, "y": 3, "w": 4, "h": 4}, "targets": [{"refId": "A", "expr": "sum(rate(opsight_http_requests_total[5m]))"}], "fieldConfig": {"defaults": {"unit": "reqps"}}},
+    {"id": 4, "type": "stat", "title": "Active Alerts", "description": "Number of active Prometheus alerts.", "datasource": {"type": "prometheus", "uid": "prometheus"}, "gridPos": {"x": 8, "y": 3, "w": 4, "h": 4}, "targets": [{"refId": "A", "expr": "sum(ALERTS{alertstate=\"firing\"})"}]},
+    {"id": 5, "type": "stat", "title": "Current Error Budget", "description": "Remaining availability error budget for the 99.9% objective. Values below zero indicate budget exhaustion.", "datasource": {"type": "prometheus", "uid": "prometheus"}, "gridPos": {"x": 12, "y": 3, "w": 4, "h": 4}, "targets": [{"refId": "A", "expr": "clamp_max(clamp_min(opsight:slo_error_budget_remaining:30d, 1), 0)"}], "fieldConfig": {"defaults": {"unit": "percentunit", "thresholds": {"steps": [{"color": "red"}, {"color": "orange", "value": 0.25}, {"color": "green", "value": 0.75}]}}}},
+    {"id": 6, "type": "stat", "title": "API Active Requests", "description": "Saturation indicator for in-flight API work.", "datasource": {"type": "prometheus", "uid": "prometheus"}, "gridPos": {"x": 16, "y": 3, "w": 4, "h": 4}, "targets": [{"refId": "A", "expr": "sum(opsight_http_active_requests)"}]},
+    {"id": 7, "type": "stat", "title": "Dependency Status", "description": "Payment gateway scrape health.", "datasource": {"type": "prometheus", "uid": "prometheus"}, "gridPos": {"x": 20, "y": 3, "w": 4, "h": 4}, "targets": [{"refId": "A", "expr": "avg(up{job=\"payment-gateway\"})"}], "fieldConfig": {"defaults": {"unit": "percentunit", "thresholds": {"steps": [{"color": "red"}, {"color": "green", "value": 1}]}}}},
+    {"id": 8, "type": "timeseries", "title": "RED Metrics: Rate and Errors", "description": "Request rate and 5xx rate over time.", "datasource": {"type": "prometheus", "uid": "prometheus"}, "gridPos": {"x": 0, "y": 7, "w": 12, "h": 7}, "targets": [{"refId": "Rate", "expr": "sum(rate(opsight_http_requests_total[5m]))"}, {"refId": "Errors", "expr": "sum(rate(opsight_http_requests_total{status_code=~\"5..\"}[5m]))"}], "fieldConfig": {"defaults": {"unit": "reqps"}}},
+    {"id": 9, "type": "timeseries", "title": "Latency p50 / p95 / p99", "description": "Core API duration percentiles. p95 target: under 1 second.", "datasource": {"type": "prometheus", "uid": "prometheus"}, "gridPos": {"x": 12, "y": 7, "w": 12, "h": 7}, "targets": [{"refId": "p50", "expr": "histogram_quantile(0.50, sum(rate(opsight_http_request_duration_seconds_bucket[5m])) by (le))"}, {"refId": "p95", "expr": "histogram_quantile(0.95, sum(rate(opsight_http_request_duration_seconds_bucket[5m])) by (le))"}, {"refId": "p99", "expr": "histogram_quantile(0.99, sum(rate(opsight_http_request_duration_seconds_bucket[5m])) by (le))"}], "fieldConfig": {"defaults": {"unit": "s"}}},
+    {"id": 10, "type": "heatmap", "title": "Request Latency Heatmap", "description": "Distribution view for latency regressions and long-tail behavior.", "datasource": {"type": "prometheus", "uid": "prometheus"}, "gridPos": {"x": 0, "y": 14, "w": 12, "h": 8}, "targets": [{"refId": "A", "expr": "sum(rate(opsight_http_request_duration_seconds_bucket[5m])) by (le)", "format": "heatmap"}]},
+    {"id": 11, "type": "timeseries", "title": "Error Budget Burn Rate", "description": "Availability burn rate against a 99.9% SLO. Values above 1 consume budget faster than calendar time.", "datasource": {"type": "prometheus", "uid": "prometheus"}, "gridPos": {"x": 12, "y": 14, "w": 12, "h": 8}, "targets": [{"refId": "5m", "expr": "opsight:slo_availability_burn_rate:5m"}, {"refId": "1h", "expr": "opsight:slo_availability_burn_rate:1h"}, {"refId": "6h", "expr": "opsight:slo_availability_burn_rate:6h"}]},
+    {"id": 12, "type": "table", "title": "Top Failing Endpoints", "description": "Routes producing the most 5xx responses.", "datasource": {"type": "prometheus", "uid": "prometheus"}, "gridPos": {"x": 0, "y": 22, "w": 8, "h": 7}, "targets": [{"refId": "A", "expr": "topk(10, sum(rate(opsight_http_requests_total{status_code=~\"5..\"}[15m])) by (route, status_code))", "format": "table", "instant": true}]},
+    {"id": 13, "type": "timeseries", "title": "Dependency Health", "description": "Payment gateway latency and error rate.", "datasource": {"type": "prometheus", "uid": "prometheus"}, "gridPos": {"x": 8, "y": 22, "w": 8, "h": 7}, "targets": [{"refId": "payment p95", "expr": "histogram_quantile(0.95, sum(rate(opsight_payment_duration_seconds_bucket[5m])) by (le, operation))"}, {"refId": "payment errors", "expr": "sum(rate(opsight_payment_requests_total{status_code=~\"5..\"}[5m]))"}]},
+    {"id": 14, "type": "logs", "title": "Current Incidents and Operational Events", "description": "Warnings and errors from API and dependency services. Trace IDs open directly in Tempo through the Loki datasource derived field.", "datasource": {"type": "loki", "uid": "loki"}, "gridPos": {"x": 16, "y": 22, "w": 8, "h": 7}, "targets": [{"refId": "A", "expr": "{service=~\"opsight-api|payment-gateway\"} | json | severity =~ \"ERROR|WARNING\""}]},
+    {"id": 15, "type": "timeseries", "title": "Service Uptime Signals", "description": "Scrape health for API, dependency, and AI RCA services.", "datasource": {"type": "prometheus", "uid": "prometheus"}, "gridPos": {"x": 0, "y": 29, "w": 12, "h": 6}, "targets": [{"refId": "A", "expr": "up{job=~\"opsight-api|payment-gateway|opsight-ai-rca\"}", "legendFormat": "{{job}}"}], "fieldConfig": {"defaults": {"unit": "percentunit"}}},
+    {"id": 16, "type": "stat", "title": "AI RCA Readiness", "description": "Scrape health for the local-first AI RCA operational intelligence service.", "datasource": {"type": "prometheus", "uid": "prometheus"}, "gridPos": {"x": 12, "y": 29, "w": 4, "h": 6}, "targets": [{"refId": "A", "expr": "avg(up{job=\"opsight-ai-rca\"})"}], "fieldConfig": {"defaults": {"unit": "percentunit", "thresholds": {"steps": [{"color": "red"}, {"color": "green", "value": 1}]}}}},
+    {"id": 17, "type": "timeseries", "title": "AI RCA Provider Reliability", "description": "Provider failures and fallback signals. Rule-based fallback keeps investigations demoable without external API keys.", "datasource": {"type": "prometheus", "uid": "prometheus"}, "gridPos": {"x": 16, "y": 29, "w": 8, "h": 6}, "targets": [{"refId": "Failures", "expr": "sum(rate(opsight_ai_rca_provider_failures_total[5m])) by (provider, reason)"}, {"refId": "Requests", "expr": "sum(rate(opsight_ai_rca_requests_total[5m])) by (provider, outcome)"}]},
+    {"id": 18, "type": "logs", "title": "AI RCA Operational Decisions", "description": "AI RCA workflow completions, fallback decisions, and provider outcomes for auditability.", "datasource": {"type": "loki", "uid": "loki"}, "gridPos": {"x": 0, "y": 35, "w": 24, "h": 7}, "targets": [{"refId": "A", "expr": "{service=\"opsight-ai-rca\"} | json | message =~ \"ai rca workflow completed|llm provider unavailable.*\""}]}
+  ]
+}
