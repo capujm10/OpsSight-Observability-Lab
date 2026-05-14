@@ -8,8 +8,8 @@ PROM_URL="${PROM_URL:-http://localhost:9090}"
 LOKI_URL="${LOKI_URL:-http://localhost:3100}"
 TEMPO_URL="${TEMPO_URL:-http://localhost:3200}"
 
-curl -fsS "${BASE_URL}/health/live" >/dev/null
-curl -fsS "${BASE_URL}/health/ready" >/dev/null
+curl -fsS "${BASE_URL}/api/v1/health/live" >/dev/null
+curl -fsS "${BASE_URL}/api/v1/health/ready" >/dev/null
 curl -fsS "${DEPENDENCY_URL}/health/ready" >/dev/null
 curl -fsS "${BASE_URL}/metrics" | grep -q "opsight_http_requests_total"
 curl -fsS "${DEPENDENCY_URL}/metrics" | grep -q "opsight_payment"
