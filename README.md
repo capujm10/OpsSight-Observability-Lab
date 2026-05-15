@@ -314,7 +314,33 @@ scripts/                   Smoke, simulation, RCA, and postmortem utilities
 docs/                      Architecture, runbooks, security, AI RCA, and audit docs
 incident-postmortems/      Templates, examples, and generated postmortems
 .github/                   CI, Dependabot, ownership, and collaboration templates
+.github/skills/            Repo-native AI assistant skills
+.github/prompts/           Reusable operational review prompts
 ```
+
+## AI-Assisted Engineering Workflows
+
+OpsSight includes lightweight repository-native AI workflow assets:
+
+- `.github/copilot-instructions.md`: Copilot-specific repository guidance that complements `AGENTS.md`.
+- `.github/skills/`: reusable skills for observability audits, incident simulation, security audits, production-readiness review, runbook generation, and postmortem generation.
+- `.github/prompts/`: reusable prompts for runbooks, postmortems, service hardening, observability review, and security review.
+
+These assets are intentionally Markdown-first with small Bash helpers so they remain useful in GitHub, WSL, CI, and agentic coding tools without requiring a proprietary runtime.
+
+## Automation Scripts
+
+Reusable operational scripts live in `scripts/`:
+
+```bash
+bash scripts/validate-all.sh
+bash scripts/security-audit.sh
+bash scripts/observability-check.sh
+bash scripts/capture-demo-assets.sh
+bash scripts/generate-release-notes.sh
+```
+
+`validate-all.sh` runs static checks, repository tests, Compose validation, Kubernetes dry-run validation, and the smoke test. Set `START_STACK=1 CLEANUP_STACK=1` to have it start and clean up the Compose stack around the smoke test.
 
 ## Screenshots
 
