@@ -4,28 +4,127 @@ updates:
     directory: /
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+      day: monday
+      time: "09:00"
+      timezone: America/Costa_Rica
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+      - ci
+    reviewers:
+      - capujm10
+    commit-message:
+      prefix: deps(actions)
+      include: scope
+    groups:
+      github-actions:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
 
   - package-ecosystem: pip
     directory: /apps/api
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+      day: monday
+      time: "09:15"
+      timezone: America/Costa_Rica
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+      - python
+      - api
+    reviewers:
+      - capujm10
+    commit-message:
+      prefix: deps(api)
+      include: scope
+    groups:
+      api-python-minor-patch:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
 
   - package-ecosystem: pip
     directory: /apps/dependency
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+      day: monday
+      time: "09:30"
+      timezone: America/Costa_Rica
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+      - python
+      - dependency-service
+    reviewers:
+      - capujm10
+    commit-message:
+      prefix: deps(dependency)
+      include: scope
+    groups:
+      dependency-python-minor-patch:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
 
   - package-ecosystem: pip
     directory: /apps/ai-rca
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+      day: monday
+      time: "09:45"
+      timezone: America/Costa_Rica
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+      - python
+      - ai-rca
+    reviewers:
+      - capujm10
+    commit-message:
+      prefix: deps(ai-rca)
+      include: scope
+    groups:
+      ai-rca-python-minor-patch:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
 
   - package-ecosystem: pip
     directory: /apps/local-runtime-exporter
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+      day: monday
+      time: "10:00"
+      timezone: America/Costa_Rica
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+      - python
+      - local-runtime-exporter
+    reviewers:
+      - capujm10
+    commit-message:
+      prefix: deps(local-runtime)
+      include: scope
+    groups:
+      local-runtime-python-minor-patch:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch

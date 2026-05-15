@@ -7,5 +7,5 @@ contactPoints:
       - uid: opsight-local-console
         type: webhook
         settings:
-          url: http://api:8000/health/live
-          httpMethod: GET
+          url: http://ai-rca:8090/api/v1/alertmanager/webhook
+          httpMethod: POST

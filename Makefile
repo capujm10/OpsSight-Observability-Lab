@@ -1,4 +1,4 @@
-.PHONY: up down restart logs ps lint format format-check typecheck test ai-test validate-yaml validate-compose validate-k8s audit ci-local smoke load errors latency dependency alerts ai-rca alert-webhook postmortems k6-smoke k6-spike k6-sustained clean
+.PHONY: up down restart logs ps lint format format-check typecheck test ai-test validate-yaml validate-compose validate-k8s audit security-audit observability-check validate-all capture-demo-assets release-notes ci-local smoke load errors latency dependency alerts ai-rca alert-webhook postmortems k6-smoke k6-spike k6-sustained clean
 
 up:
 	docker compose up -d --build
@@ -45,6 +45,21 @@ validate-k8s:
 
 audit:
 	python -m pip_audit -r apps/api/requirements.txt -r apps/dependency/requirements.txt -r apps/ai-rca/requirements.txt -r apps/local-runtime-exporter/requirements.txt
+
+security-audit:
+	bash scripts/security-audit.sh
+
+observability-check:
+	bash scripts/observability-check.sh
+
+validate-all:
+	bash scripts/validate-all.sh
+
+capture-demo-assets:
+	bash scripts/capture-demo-assets.sh
+
+release-notes:
+	bash scripts/generate-release-notes.sh
 
 ci-local: lint format-check typecheck test validate-yaml validate-compose validate-k8s
 
