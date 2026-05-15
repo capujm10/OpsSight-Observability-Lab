@@ -12,8 +12,9 @@ images:
     newTag: dev
   - name: opsight/ai-rca
     newTag: dev
-patches:
+patchesJson6902:
   - target:
+      version: v1
       kind: Namespace
       name: opsight
     patch: |-
@@ -21,6 +22,8 @@ patches:
         path: /metadata/name
         value: opsight-dev
   - target:
+      group: rbac.authorization.k8s.io
+      version: v1
       kind: ClusterRole
       name: kube-state-metrics
     patch: |-
@@ -28,6 +31,8 @@ patches:
         path: /metadata/name
         value: kube-state-metrics-opsight-dev
   - target:
+      group: rbac.authorization.k8s.io
+      version: v1
       kind: ClusterRoleBinding
       name: kube-state-metrics
     patch: |-
@@ -37,7 +42,8 @@ patches:
       - op: replace
         path: /roleRef/name
         value: kube-state-metrics-opsight-dev
-  - path: environment-config.yaml
-  - path: ingress.yaml
-  - path: replicas.yaml
-  - path: resources.yaml
+patchesStrategicMerge:
+  - environment-config.yaml
+  - ingress.yaml
+  - replicas.yaml
+  - resources.yaml
