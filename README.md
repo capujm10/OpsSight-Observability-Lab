@@ -1,349 +1,364 @@
 # OpsSight Observability Lab
 
 [![CI](https://github.com/capujm10/OpsSight-Observability-Lab/actions/workflows/ci.yml/badge.svg)](https://github.com/capujm10/OpsSight-Observability-Lab/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/capujm10/OpsSight-Observability-Lab/actions/workflows/codeql.yml/badge.svg)](https://github.com/capujm10/OpsSight-Observability-Lab/actions/workflows/codeql.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-blue.svg)](pyproject.toml)
-[![FastAPI](https://img.shields.io/badge/FastAPI-observable%20services-009688.svg)](apps/api)
+[![FastAPI](https://img.shields.io/badge/FastAPI-service%20mesh-009688.svg)](apps/api)
+[![Docker Compose](https://img.shields.io/badge/Docker%20Compose-local%20runtime-2496ED.svg)](docker-compose.yml)
+[![Kubernetes](https://img.shields.io/badge/Kubernetes-manifest%20validation-326CE5.svg)](k8s)
+[![Prometheus](https://img.shields.io/badge/Prometheus-metrics%20%26%20alerts-E6522C.svg)](observability/prometheus)
+[![Grafana](https://img.shields.io/badge/Grafana-dashboards-F46800.svg)](observability/grafana)
+[![OpenTelemetry](https://img.shields.io/badge/OpenTelemetry-traces%20via%20Alloy-000000.svg)](observability/alloy)
 
-OpsSight Observability Lab is a fully containerized local observability and SRE platform for production-style FastAPI services. It is designed as a modern enterprise-grade observability and SRE platform inspired by real-world SaaS incident management and cloud-native operational practices.
+## Executive Summary
 
-The goal is operational realism: metrics, logs, traces, dashboards, alerts, and incident workflows all come from a real API service and real telemetry pipelines.
+OpsSight Observability Lab is a public SRE and platform engineering portfolio project that models a production-readiness observability stack on a local workstation. It runs real FastAPI services, emits metrics/logs/traces, provisions Grafana dashboards and alerting rules, validates Kubernetes manifests, and enforces CI quality gates for Python, containers, infrastructure, and dependency security.
 
-## Architecture
+The project is intentionally local-first. It is built to demonstrate engineering judgment around service instrumentation, incident workflows, CI/CD quality control, and baseline security hardening without pretending that a Docker Compose lab is a fully managed production platform.
+
+## Why This Project Exists
+
+OpsSight exists to show the operational work behind a credible platform engineering portfolio project: designing service telemetry, validating runtime dependencies, failing builds for the right reasons, and documenting how an operator would investigate real failure modes. The goal is not to present a toy dashboard stack; it is to demonstrate how an SRE thinks about evidence, readiness, failure isolation, and safe publication.
+
+## Production-Readiness Goals
+
+- Keep local startup reproducible through Docker Compose.
+- Ensure CI validates static quality, tests, infrastructure manifests, containers, security scans, and a full smoke path.
+- Preserve deterministic AI RCA behavior when no LLM provider is available.
+- Make telemetry useful for incident response, not just chart screenshots.
+- Keep production claims realistic: Compose is a lab runtime, while Kubernetes manifests and Helm scaffolding are migration/readiness artifacts.
+
+## What This Project Demonstrates
+
+- FastAPI service design with health checks, standardized responses, request correlation, structured logging, and Prometheus metrics.
+- Dependency simulation through a separate payment-gateway service with latency and failure controls.
+- OpenTelemetry traces exported through Grafana Alloy and stored in Tempo.
+- Loki log ingestion with trace/correlation IDs for incident investigation.
+- Prometheus recording rules, burn-rate alerts, service health signals, and SLO-oriented dashboards.
+- Grafana dashboards for SRE overview, API golden signals, incident investigation, Docker runtime, Kubernetes operations, workstation telemetry, and AI runtime monitoring.
+- Local-first AI RCA workflows with deterministic `rule_based` fallback and optional Ollama/LM Studio/OpenAI-compatible providers.
+- Docker Compose runtime with non-root custom service containers and local-demo security boundaries.
+- Kubernetes and Helm-ready manifests for migration/readiness review.
+- Split GitHub Actions quality gates: Ruff, mypy, pytest, YAML validation, Docker build, KIND-backed Kubernetes validation, smoke testing, pip-audit, and Trivy.
+- CodeQL Python static analysis as a separate code-scanning workflow.
+- Public repository governance through Dependabot, CODEOWNERS, issue/PR templates, SECURITY.md, CONTRIBUTING.md, secret scanning, push protection, and branch protection.
+
+## Architecture Overview
 
 ```mermaid
-flowchart LR
-  User[Load, k6, and incident scripts] --> API[FastAPI Orders API]
-  API --> Dependency[Payment Gateway Service]
-  API -->|/metrics| Alloy[Grafana Alloy]
-  Dependency -->|/metrics| Alloy
-  RCA[AI RCA Service] -->|/metrics and OTLP traces| Alloy
-  API -->|OTLP traces| Alloy
-  Dependency -->|OTLP traces| Alloy
-  API -->|JSON stdout logs| Docker[Docker Engine]
-  Dependency -->|JSON stdout logs| Docker
-  RCA -->|JSON stdout logs| Docker
-  Docker --> Alloy
-  Alloy -->|remote_write| Prometheus
-  Alloy -->|logs| Loki
-  Alloy -->|traces| Tempo
-  Prometheus --> Grafana[Grafana dashboards and alerts]
+flowchart TB
+  Dev[Developer / CI Runner] --> Compose[Docker Compose Runtime]
+  Dev --> GHA[GitHub Actions CI/CD]
+  GHA --> Quality[Lint, Format, Type Check, Unit Tests]
+  GHA --> Infra[Compose, YAML, KIND + kubectl Dry Run]
+  GHA --> Sec[pip-audit + Trivy]
+  GHA --> Build[Docker Build + Smoke Test Stack]
+
+  Compose --> API[FastAPI Orders API]
+  Compose --> Pay[Payment Gateway Dependency]
+  Compose --> RCA[AI RCA Service]
+  Compose --> Exporter[Local Runtime Exporter]
+
+  API --> Pay
+  API --> Metrics[/metrics]
+  Pay --> Metrics
+  RCA --> Metrics
+  Exporter --> Metrics
+
+  API --> Logs[JSON stdout logs]
+  Pay --> Logs
+  RCA --> Logs
+
+  API --> Traces[OTLP traces]
+  Pay --> Traces
+  RCA --> Traces
+
+  Metrics --> Alloy[Grafana Alloy]
+  Logs --> Alloy
+  Traces --> Alloy
+
+  Alloy --> Prom[Prometheus]
+  Alloy --> Loki[Loki]
+  Alloy --> Tempo[Tempo]
+
+  Prom --> Grafana[Grafana Dashboards and Alerts]
   Loki --> Grafana
   Tempo --> Grafana
+
+  K8s[Kubernetes Manifests] --> Infra
 ```
 
-## What It Demonstrates
+## Core Services
 
-- FastAPI service with production-style middleware, health checks, standardized responses, and exception handling.
-- A separate observable payment-gateway dependency service with metrics, logs, traces, and failure simulation.
-- Prometheus metrics for request rate, duration, errors, active requests, endpoint throughput, status distribution, and dependency latency.
-- Structured JSON logs with correlation IDs, trace IDs, severity, route, status code, and exception stack traces.
-- OpenTelemetry traces exported to Grafana Alloy and stored in Tempo.
-- Grafana dashboards for golden signals and incident investigation.
-- Prometheus and Grafana alerting with severity, probable causes, and remediation guidance.
-- SLO and error budget tracking for availability, latency compliance, and error rate.
-- Burn-rate recording rules and fast/slow burn alerts.
-- Reproducible incident scenarios for downtime, latency, 500s, dependency degradation, and partial service failure.
-- Production-inspired incident management and postmortem generation from structured incident data.
-- Local-first AI-assisted RCA with rule-based fallback, Ollama/LM Studio/OpenAI-compatible provider support, and postmortem enrichment.
-- k6 smoke, spike, and sustained load profiles.
-- Kubernetes manifests and Helm-ready packaging placeholders.
-- GitHub Actions CI for linting, tests, Docker/Compose validation, smoke tests, YAML validation, and Kubernetes dry-run validation.
+| Service | Path | Port | Purpose |
+| --- | --- | ---: | --- |
+| Orders API | `apps/api` | `8000` | User-facing FastAPI service with order endpoints, middleware, metrics, traces, and failure simulations. |
+| Payment gateway | `apps/dependency` | `8081` | Observable downstream dependency used to model latency, 503s, and dependency degradation. |
+| AI RCA | `apps/ai-rca` | `8090` | Incident analysis API for alert explanation, log/trace summaries, RCA hypotheses, and persisted RCA artifacts. |
+| Local runtime exporter | `apps/local-runtime-exporter` | `9108` | Workstation runtime telemetry exporter for Docker, Ollama, WSL/Linux host metrics, and optional GPU signals. |
 
-## Prerequisites
+## Observability Stack
+
+| Component | Path | Role |
+| --- | --- | --- |
+| Prometheus | `observability/prometheus` | Metrics scraping, recording rules, burn-rate calculations, and alert rules. |
+| Grafana | `observability/grafana` | Provisioned dashboards, alerting resources, and incident investigation views. |
+| Loki | `observability/loki` | Log storage for structured application and runtime logs. |
+| Tempo | `observability/tempo` | Trace storage for OpenTelemetry spans. |
+| Grafana Alloy | `observability/alloy` | Local collector for metrics, logs, and OTLP traces. |
+| k6 | `load/k6` | Smoke, spike, and sustained load profiles. |
+
+For a deeper telemetry-flow breakdown, see [docs/observability-architecture.md](docs/observability-architecture.md).
+
+## CI/CD Quality Gates
+
+The workflow in `.github/workflows/ci.yml` is split into explicit jobs so failures identify the broken layer quickly.
+
+| Gate | What it validates | Risk reduced |
+| --- | --- | --- |
+| Lint and format | `ruff check` and `ruff format --check` over `apps`, `scripts`, and `tests`. | Style drift, import disorder, unused code, and CI failures from formatting differences. |
+| Type check | `mypy --no-incremental` for API, dependency, and AI RCA service packages. | Interface drift, incorrect typing assumptions, and stale mypy cache behavior. |
+| Unit tests | Service-scoped pytest for API and AI RCA plus repository-level postmortem tests. | Behavioral regressions and Python package import collisions between service-local `app` packages. |
+| Validate infra | YAML linting, Docker Compose config validation, KIND cluster startup, and `kubectl apply --dry-run=client --validate=false`. | Invalid manifests, broken Compose syntax, and Kubernetes readiness regressions. |
+| Security scan | `pip-audit` over all Python requirement files and Trivy filesystem scan. | Known vulnerable dependencies and high-severity filesystem findings. |
+| CodeQL | Python static analysis in a separate CodeQL workflow. | Code-level security and correctness findings surfaced through GitHub code scanning. |
+| Build containers | `docker compose build`. | Dockerfile, dependency, and build-context failures. |
+| Smoke test stack | `docker compose up -d --build` followed by `scripts/smoke-test.sh`. | Runtime wiring failures across API, dependency, metrics, Prometheus, Loki, Tempo, Grafana, and sample API endpoints. |
+
+The smoke test validates:
+
+- API OpenAPI readiness
+- dependency service readiness
+- API and dependency metrics endpoints
+- Prometheus health and query API
+- Loki readiness
+- Tempo readiness
+- Grafana readiness
+- sample `/api/v1/orders` endpoint availability
+
+## Security and Governance
+
+Current baseline controls:
+
+- `pip-audit` dependency scanning in CI.
+- Trivy filesystem scanning in CI.
+- CodeQL Python static analysis in `.github/workflows/codeql.yml`.
+- Dependabot version-update configuration for GitHub Actions and Python requirements.
+- GitHub secret scanning enabled.
+- GitHub push protection enabled.
+- Branch protection on `main` requiring the split CI checks.
+- Required pull request review count of one on `main`.
+- CODEOWNERS, issue templates, PR template, SECURITY.md, and CONTRIBUTING.md.
+- Custom application containers run as non-root users.
+- Local app services use read-only root filesystems, dropped Linux capabilities, no-new-privileges, and tmpfs-backed `/tmp` where compatible.
+- API-facing FastAPI services set conservative security headers.
+- Grafana `admin` / `admin` credentials are documented as local-demo only and can be overridden through environment variables.
+
+Dependabot security updates are not currently enabled in repository settings; Dependabot is configured for version-update governance. Docker socket and host filesystem mounts are local observability features and should not be used as-is in production.
+
+## Operational Scenarios
+
+The lab is designed around realistic failure modes:
+
+- Dependency outage: payment-gateway errors increase API failures and trigger dependency-focused investigation.
+- Observability degradation: Prometheus, Loki, Tempo, or Grafana readiness failures block smoke validation even if app containers start.
+- Startup sequencing failure: API readiness depends on downstream and telemetry startup behavior instead of assuming all containers are ready immediately.
+- Metrics validation failure: smoke testing requires expected metric families to exist, catching instrumentation regressions.
+- RCA workflow degradation: AI RCA must continue with deterministic `rule_based` output when an external LLM provider is unavailable.
+
+## Failure Simulation Philosophy
+
+Failure scenarios should be reproducible, observable, and reversible. A scenario is useful only when it produces evidence in at least two telemetry planes, such as metrics plus logs or logs plus traces. Smoke checks should not be weakened to make a demo pass; runtime failures should be fixed at the service, dependency, or telemetry pipeline boundary.
+
+## Local Development Quickstart
+
+Prerequisites:
 
 - Docker Desktop with Compose
 - Bash-compatible shell for scripts
-- Optional: `make`, `jq`, Python 3.12 for local tests
-- Optional: `kubectl` for manifest validation
+- Python 3.12 for local quality checks
+- Optional: `make`, `kubectl`, and `jq`
 
-## Start
+Clone and start:
+
+```bash
+git clone https://github.com/capujm10/OpsSight-Observability-Lab.git
+cd OpsSight-Observability-Lab
+
+docker compose build
+docker compose up -d
+bash scripts/smoke-test.sh
+```
+
+Stop and clean local volumes:
+
+```bash
+docker compose down -v --remove-orphans
+```
+
+Python quality checks:
+
+```bash
+python -m ruff check apps scripts tests
+python -m ruff format --check apps scripts tests
+python -m pytest tests
+```
+
+Service-scoped tests:
+
+```bash
+cd apps/api
+python -m pytest
+
+cd ../ai-rca
+python -m pytest
+```
+
+The services intentionally use service-local packages named `app`; run service tests from each service directory to avoid mixed import contexts.
+
+## Docker Compose Usage
+
+Start the full stack:
 
 ```bash
 docker compose up -d --build
 ```
 
-Open:
+Useful endpoints:
 
-- API: `http://localhost:8000/docs`
-- Payment gateway: `http://localhost:8081/health/ready`
-- AI RCA service: `http://localhost:8090/health/ready`
-- Grafana: `http://localhost:3000` with `admin` / `admin`
-- Prometheus: `http://localhost:9090`
-- Loki: `http://localhost:3100`
-- Tempo: `http://localhost:3200`
-- Alloy: `http://localhost:12345`
+| Component | URL |
+| --- | --- |
+| API docs | `http://localhost:8000/docs` |
+| Payment gateway readiness | `http://localhost:8081/health/ready` |
+| AI RCA readiness | `http://localhost:8090/health/ready` |
+| Grafana | `http://localhost:3000` |
+| Prometheus | `http://localhost:9090` |
+| Loki | `http://localhost:3100` |
+| Tempo | `http://localhost:3200` |
+| Alloy | `http://localhost:12345` |
 
-The Grafana `admin` / `admin` credential is a local demo default only. Set `GF_SECURITY_ADMIN_USER` and `GF_SECURITY_ADMIN_PASSWORD` before exposing the stack outside your workstation.
+Local Grafana default:
 
-Run a smoke test:
+```text
+username: admin
+password: admin
+```
+
+Set `GF_SECURITY_ADMIN_USER` and `GF_SECURITY_ADMIN_PASSWORD` before exposing Grafana outside a trusted local workstation.
+
+## Smoke Testing
+
+Run:
 
 ```bash
 bash scripts/smoke-test.sh
 ```
 
-## Dashboards
-
-Grafana provisions three dashboards automatically in the `OpsSight Observability Lab` folder.
-
-OpsSight SRE Overview:
-
-- service availability SLI
-- request throughput
-- active alerts
-- current error budget
-- burn-rate trend
-- RED metrics
-- latency heatmap
-- top failing endpoints
-- dependency health
-- AI RCA readiness and provider reliability
-- service uptime signals
-- operational annotations
-
-API Golden Signals:
-
-- request rate
-- error rate
-- latency p50/p95/p99
-- saturation through active requests
-- status code breakdown
-- endpoint throughput
-- slowest endpoints
-- dependency latency
-- recent incident logs
-- service availability
-
-Incident Investigation:
-
-- live structured logs
-- error logs with correlation IDs
-- latency spikes by route
-- dependency failures
-- recent traces
-- operational timeline
-- troubleshooting drilldowns
-
-## SLOs and Error Budgets
-
-SLIs:
-
-- Availability: successful API requests divided by total API requests.
-- Latency: percentage of API requests completing below the target bucket.
-- Error rate: 5xx responses divided by total API requests.
-
-SLOs:
-
-- Availability target: 99.9%.
-- p95 latency target: under 1 second.
-- Maximum acceptable error rate: 0.1% for the availability SLO model.
-
-Prometheus records burn rates across 5m, 1h, and 6h windows. Alerts include fast-burn and slow-burn variants so short severe incidents and longer degradation patterns are both visible.
-
-Screenshot placeholders:
-
-- `docs/screenshots/api-golden-signals.png`
-- `docs/screenshots/incident-investigation.png`
-- `docs/screenshots/tempo-trace-detail.png`
-
-## Incident Simulation
-
-Generate baseline traffic:
+Override endpoints if needed:
 
 ```bash
-bash scripts/generate-load.sh
+BASE_URL=http://localhost:8000 \
+DEPENDENCY_URL=http://localhost:8081 \
+GRAFANA_URL=http://localhost:3000 \
+PROM_URL=http://localhost:9090 \
+LOKI_URL=http://localhost:3100 \
+TEMPO_URL=http://localhost:3200 \
+bash scripts/smoke-test.sh
 ```
 
-Trigger high latency:
+## Kubernetes Validation
+
+Kubernetes manifests live under:
+
+- `k8s/base`
+- `k8s/api`
+- `k8s/monitoring`
+- `k8s/overlays/local`
+
+CI starts a KIND cluster and validates manifests with:
 
 ```bash
-bash scripts/simulate-latency.sh
+kubectl apply --dry-run=client --validate=false -f k8s/base -f k8s/api -f k8s/monitoring
 ```
 
-Trigger 500 errors:
+Local validation example:
 
 ```bash
-bash scripts/simulate-errors.sh
+kubectl apply --dry-run=client --validate=false -f k8s/base -f k8s/api -f k8s/monitoring
 ```
 
-Trigger dependency degradation:
+Full deployment requires a Kubernetes cluster, image publishing strategy, ingress/TLS configuration, storage classes, and real secret management.
 
-```bash
-curl http://localhost:8000/api/v1/simulate/dependency-failure
+## Repository Structure
+
+```text
+apps/
+  api/                     FastAPI orders service
+  dependency/              Observable payment-gateway dependency
+  ai-rca/                  AI-assisted RCA service with deterministic fallback
+  local-runtime-exporter/  Docker/Ollama/host runtime metrics exporter
+observability/
+  alloy/                   Grafana Alloy collector config
+  prometheus/              Prometheus scrape config, rules, and file SD
+  grafana/                 Dashboards, datasources, and alerting provisioning
+  loki/                    Loki config
+  tempo/                   Tempo config
+k8s/                       Kubernetes readiness manifests
+helm/                      Helm packaging scaffold
+load/k6/                   k6 load profiles
+scripts/                   Smoke, simulation, RCA, and postmortem utilities
+docs/                      Architecture, runbooks, security, AI RCA, and audit docs
+incident-postmortems/      Templates, examples, and generated postmortems
+.github/                   CI, Dependabot, ownership, and collaboration templates
 ```
 
-Run k6 smoke load:
+## Screenshots
 
-```bash
-docker compose --profile load run --rm k6 run /scripts/smoke.js
-```
+Screenshot placeholders are tracked under `docs/screenshots/`.
 
-Run k6 spike load:
+Recommended public portfolio screenshots:
 
-```bash
-docker compose --profile load run --rm k6 run /scripts/spike.js
-```
+- Grafana dashboards: SRE Overview, API Golden Signals, Incident Investigation, AI Runtime Monitoring.
+- Prometheus: targets page and active alert/rule views.
+- Tempo: dependency trace from an API request.
+- Loki: structured logs filtered by `correlation_id` or `trace_id`.
+- GitHub Actions: CI workflow showing split quality gates and CodeQL workflow.
 
-Trigger API downtime:
+No screenshot files are invented in this repository. Capture real images after `docker compose up -d --build`, load generation, and at least one incident scenario.
 
-```bash
-docker compose stop api
-```
+## Roadmap
 
-Restore:
+- Add real dashboard screenshots after a full local run.
+- Add SBOM generation and signed image provenance for release builds.
+- Add production Helm values for external secrets, persistent storage, ingress TLS, and managed telemetry backends.
+- Add authentication/authorization controls before exposing API or AI RCA endpoints beyond localhost.
+- Add Grafana annotations from generated RCA milestones.
+- Add release workflow for tagged container builds.
+- Add dashboard screenshot regression checks after Grafana upgrades.
 
-```bash
-docker compose up -d api
-```
+## Release Process
 
-## Troubleshooting Workflow
+Releases follow semantic versioning and are recorded in [CHANGELOG.md](CHANGELOG.md).
 
-1. Check the API Golden Signals dashboard for availability, error rate, and p95 latency.
-2. Open OpsSight SRE Overview and inspect current error budget burn.
-3. Identify the route and status code causing impact.
-4. Open Incident Investigation and filter logs by severity.
-5. Use the Loki `trace_id` derived field to open the Tempo trace directly.
-6. Inspect API and payment-gateway spans for latency or failure.
-7. Confirm the alert annotation remediation and validate recovery in Prometheus.
+1. Run local quality gates and smoke validation.
+2. Confirm GitHub Actions CI and CodeQL pass on the release branch.
+3. Update `CHANGELOG.md` with the release date, notable changes, security notes, and validation evidence.
+4. Tag the release as `vMAJOR.MINOR.PATCH`.
+5. Publish release notes that distinguish local-lab readiness from production deployment requirements.
 
-## Incident Postmortems
+## Interview Talking Points
 
-Incident postmortem assets live under `incident-postmortems/`:
+- How the API propagates correlation IDs and trace IDs across logs, metrics, and traces.
+- Why CI runs service tests in service directories instead of one mixed Python import context.
+- How SLO burn-rate rules connect metrics to actionable incident response.
+- Why Docker socket and host mounts are acceptable for a local observability lab but not production.
+- How deterministic AI RCA fallback keeps incident analysis usable without an LLM provider.
+- How split CI gates improve diagnosis compared with one long validation job.
+- What would change when migrating from Compose to Kubernetes or managed telemetry backends.
 
-- `templates`: reusable SEV and incident-type templates.
-- `examples`: structured incident metadata.
-- `generated`: deterministic markdown reports generated from telemetry references and incident metadata.
+## License and Contribution Notes
 
-Generate postmortems:
+This repository is licensed under the [MIT License](LICENSE).
 
-```bash
-python scripts/generate-postmortem.py
-```
-
-Read the operating model in `docs/incident-management.md`.
-
-## AI-Assisted RCA
-
-OpsSight includes a local-first AI RCA service under `apps/ai-rca/`. It explains alerts, summarizes logs and traces, ranks RCA hypotheses, recommends mitigations, and enriches postmortems.
-
-Default mode is deterministic and requires no API keys:
-
-```bash
-AI_PROVIDER=rule_based docker compose up -d --build ai-rca
-python scripts/sample-ai-rca.py
-```
-
-Replay an Alertmanager-compatible webhook and persist generated RCA artifacts:
-
-```bash
-python scripts/send-alertmanager-webhook.py
-```
-
-Optional local LLM mode uses Ollama or LM Studio:
-
-```env
-AI_PROVIDER=ollama
-AI_BASE_URL=http://host.docker.internal:11434
-AI_MODEL=llama3.2
-```
-
-Read the full setup and model guidance in `docs/ai-rca.md`.
-
-## Operational Commands
-
-```bash
-make up
-make ps
-make logs
-make smoke
-make load
-make latency
-make errors
-make ai-rca
-make alert-webhook
-make postmortems
-make k6-smoke
-make k6-spike
-make clean
-```
-
-On Windows without `make`, run the underlying `docker compose`, `bash`, and `curl` commands directly.
-
-## Local Tests
-
-```bash
-python -m venv .venv
-. .venv/Scripts/activate
-pip install -r apps/api/requirements.txt
-pip install -r apps/dependency/requirements.txt
-pip install -r apps/ai-rca/requirements.txt
-python -m ruff check apps scripts tests
-python -m ruff format --check apps scripts tests
-cd apps/api && python -m pytest
-cd ../ai-rca && python -m pytest
-cd ../..
-python -m pytest tests
-```
-
-The Python services intentionally use service-local packages named `app`. Run service tests from their service directories so Python imports the intended service package.
-
-## Kubernetes Readiness
-
-Kubernetes manifests live under `k8s/`:
-
-- `base`: namespace, config, and secret placeholders.
-- `api`: API and payment-gateway deployments, services, ingress, HPA, and NetworkPolicy.
-- `monitoring`: monitoring storage and Alloy config placeholders.
-- `overlays/local`: local Kustomize entrypoint.
-
-Helm-ready packaging placeholders live under `helm/opsight/`.
-
-## CI/CD
-
-`.github/workflows/ci.yml` validates split quality gates:
-
-- Ruff linting and format checks
-- service-scoped pytest suites
-- mypy type checks per service
-- YAML validation
-- Docker Compose syntax
-- Python dependency auditing
-- Docker image builds and optional filesystem scanning
-- local stack smoke tests
-- Kubernetes dry-run validation
-
-## Security Baseline
-
-Custom application containers run as non-root users and the local app services use read-only root filesystems, dropped Linux capabilities, no-new-privileges, health checks, structured logs, correlation IDs, and security headers. Dependencies are pinned and audited in CI. Kubernetes manifests include resource requests, limits, probes, and NetworkPolicy examples. See `docs/security-hardening.md` and `docs/production-readiness-audit.md` for production guidance.
-
-## Recruiter / Interviewer Explanation
-
-OpsSight shows the migration path from legacy uptime and APM-style monitoring into modern SRE and observability engineering. It demonstrates how an SRE or platform engineer designs telemetry at service boundaries, propagates trace context across services, routes signals through a collector, stores them in fit-for-purpose backends, and builds dashboards and alerts around incident response workflows rather than vanity charts.
-
-This is intentionally framed as an internal operations platform: it includes service health, golden signals, trace-log correlation, dependency diagnosis, SLOs, error budgets, burn-rate alerts, AI-assisted RCA, remediation text, load profiles, Kubernetes readiness, deterministic postmortems, and reproducible operational failure scenarios.
-
-## Known Limitations
-
-- Local Docker Compose is not a substitute for Kubernetes service discovery, autoscaling, or network policies.
-- Alert notification delivery is local-only and intentionally non-invasive.
-- Dashboards are provisioned as JSON and should be screenshot-reviewed after any major Grafana upgrade.
-- Kubernetes manifests are readiness artifacts, not a fully deployed cluster stack.
-- AI RCA is an investigation aid. Human responders must validate model or heuristic output against source telemetry before final RCA.
-
-## Kubernetes Migration
-
-- Replace Compose services with Helm charts or Kustomize overlays.
-- Use Kubernetes service discovery in Alloy.
-- Run Alloy as a DaemonSet for node/container logs and as a Deployment for OTLP ingestion.
-- Move secrets to External Secrets or cloud secret managers.
-- Use ingress, NetworkPolicy, PodDisruptionBudget, HPA, and resource requests/limits.
-- Add persistent volumes for Grafana, Loki, Tempo, and Prometheus or migrate to managed backends.
-
-## Production Hardening Roadmap
-
-- Add direct Grafana annotation writes from generated RCA milestones.
-- Add signed postmortem approvals and follow-up task export to an issue tracker.
-- Add authentication and authorization controls for Grafana and API endpoints.
-- Add OpenTelemetry metrics once the Python metrics signal is required beyond Prometheus exposition.
-- Add log retention policies, object storage backends, and backup/restore procedures.
-- Add chaos scenarios and post-incident review templates.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for local development and pull request expectations. Report suspected vulnerabilities through the process in [SECURITY.md](SECURITY.md).

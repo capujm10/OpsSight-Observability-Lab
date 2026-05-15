@@ -202,8 +202,7 @@ def _hypotheses(
         causes.append(
             RCAHypothesis(
                 cause=(
-                    "Local Docker runtime instability from unhealthy containers, "
-                    "restart loops, resource saturation, or filesystem growth"
+                    "Local Docker runtime instability from unhealthy containers, restart loops, resource saturation, or filesystem growth"
                 ),
                 confidence="high" if context.alert and "Restart" in context.alert.name else "medium",
                 supporting_signals=context.logs.patterns + [signal.name for signal in context.metrics],
@@ -233,8 +232,7 @@ def _hypotheses(
         causes.append(
             RCAHypothesis(
                 cause=(
-                    "Workstation infrastructure pressure from Windows CPU, disk, "
-                    "service failure, WSL2 memory pressure, or event-log errors"
+                    "Workstation infrastructure pressure from Windows CPU, disk, service failure, WSL2 memory pressure, or event-log errors"
                 ),
                 confidence="medium",
                 supporting_signals=context.logs.patterns + [signal.name for signal in context.metrics],

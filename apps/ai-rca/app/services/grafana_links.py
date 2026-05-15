@@ -11,7 +11,7 @@ def build_grafana_links(context: IncidentContext, settings: Settings) -> list[st
         f"{base}/d/opsight-incident-investigation/opsight-incident-investigation",
     ]
     for trace_id in context.traces.trace_ids:
-        links.append(f"{base}/explore?left={quote('{\"datasource\":\"tempo\",\"queries\":[{\"query\":\"' + trace_id + '\"}]}')}")
+        links.append(f"{base}/explore?left={quote('{"datasource":"tempo","queries":[{"query":"' + trace_id + '"}]}')}")
     for query in context.logs.loki_queries:
-        links.append(f"{base}/explore?left={quote('{\"datasource\":\"loki\",\"queries\":[{\"expr\":\"' + query + '\"}]}')}")
+        links.append(f"{base}/explore?left={quote('{"datasource":"loki","queries":[{"expr":"' + query + '"}]}')}")
     return links

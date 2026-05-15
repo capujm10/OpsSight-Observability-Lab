@@ -9,6 +9,10 @@ Implemented local baseline:
 - Runtime images use slim Python base images.
 - Secrets are excluded from Git through `.gitignore` and represented by `.env.example`.
 - GitHub Actions runs Ruff, format checks, pytest, mypy, YAML validation, Compose validation, Kubernetes dry-run validation, dependency auditing, image builds, and smoke testing.
+- Kubernetes validation in CI starts a KIND cluster before running `kubectl apply --dry-run=client --validate=false`.
+- Repository settings currently include GitHub secret scanning, push protection, and branch protection for `main`.
+- Dependabot is configured for version-update pull requests across GitHub Actions and Python requirement files.
+- CodeQL runs Python static analysis in a separate GitHub Actions workflow and uploads findings to GitHub code scanning.
 - Kubernetes manifests include resource limits, probes, NetworkPolicy examples, and Secret placeholders.
 
 Production recommendations:
@@ -21,3 +25,5 @@ Production recommendations:
 - Use Kubernetes discovery in clusters instead of Docker socket discovery.
 - Enforce read-only root filesystems and drop Linux capabilities for every production workload that does not need write access.
 - Add authentication and authorization before exposing API or AI RCA endpoints beyond a trusted local network.
+- Enable Dependabot security updates if the repository owner wants GitHub-managed vulnerability PRs in addition to scheduled version updates.
+- Review CodeQL findings after the first scheduled run and tune only if findings are noisy or unactionable.
