@@ -44,7 +44,8 @@ OpsSight exists to show the operational work behind a credible platform engineer
 - CodeQL Python static analysis as a separate code-scanning workflow.
 - Public repository governance through Dependabot, CODEOWNERS, issue/PR templates, SECURITY.md, CONTRIBUTING.md, secret scanning, push protection, and branch protection.
 
-## Architecture Overview
+## Architecture
+
 ```mermaid
 flowchart TB
 
@@ -89,87 +90,24 @@ flowchart TB
 
   K8s[Kubernetes Manifests] --> Infra
 ```
-## Core Services
 
-| Service | Path | Port | Purpose |
-| --- | --- | ---: | --- |
-| Orders API | `apps/api` | `8000` | User-facing FastAPI service with order endpoints, middleware, metrics, traces, and failure simulations. |
-| Payment gateway | `apps/dependency` | `8081` | Observable downstream dependency used to model latency, 503s, and dependency degradation. |
-| AI RCA | `apps/ai-rca` | `8090` | Incident analysis API for alert explanation, log/trace summaries, RCA hypotheses, and persisted RCA artifacts. |
-| Local runtime exporter | `apps/local-runtime-exporter` | `9108` | Workstation runtime telemetry exporter for Docker, Ollama, WSL/Linux host metrics, and optional GPU signals. |
+## What It Demonstrates
 
-## Observability Stack
-
-| Component | Path | Role |
-| --- | --- | --- |
-| Prometheus | `observability/prometheus` | Metrics scraping, recording rules, burn-rate calculations, and alert rules. |
-| Grafana | `observability/grafana` | Provisioned dashboards, alerting resources, and incident investigation views. |
-| Loki | `observability/loki` | Log storage for structured application and runtime logs. |
-| Tempo | `observability/tempo` | Trace storage for OpenTelemetry spans. |
-| Grafana Alloy | `observability/alloy` | Local collector for metrics, logs, and OTLP traces. |
-| k6 | `load/k6` | Smoke, spike, and sustained load profiles. |
-
-For a deeper telemetry-flow breakdown, see [docs/observability-architecture.md](docs/observability-architecture.md).
-
-## CI/CD Quality Gates
-
-The workflow in `.github/workflows/ci.yml` is split into explicit jobs so failures identify the broken layer quickly.
-
-| Gate | What it validates | Risk reduced |
-| --- | --- | --- |
-| Lint and format | `ruff check` and `ruff format --check` over `apps`, `scripts`, and `tests`. | Style drift, import disorder, unused code, and CI failures from formatting differences. |
-| Type check | `mypy --no-incremental` for API, dependency, and AI RCA service packages. | Interface drift, incorrect typing assumptions, and stale mypy cache behavior. |
-| Unit tests | Service-scoped pytest for API and AI RCA plus repository-level postmortem tests. | Behavioral regressions and Python package import collisions between service-local `app` packages. |
-| Validate infra | YAML linting, Docker Compose config validation, KIND cluster startup, and `kubectl apply --dry-run=client --validate=false`. | Invalid manifests, broken Compose syntax, and Kubernetes readiness regressions. |
-| Security scan | `pip-audit` over all Python requirement files and Trivy filesystem scan. | Known vulnerable dependencies and high-severity filesystem findings. |
-| CodeQL | Python static analysis in a separate CodeQL workflow. | Code-level security and correctness findings surfaced through GitHub code scanning. |
-| Build containers | `docker compose build`. | Dockerfile, dependency, and build-context failures. |
-| Smoke test stack | `docker compose up -d --build` followed by `scripts/smoke-test.sh`. | Runtime wiring failures across API, dependency, metrics, Prometheus, Loki, Tempo, Grafana, and sample API endpoints. |
-
-The smoke test validates:
-
-- API OpenAPI readiness
-- dependency service readiness
-- API and dependency metrics endpoints
-- Prometheus health and query API
-- Loki readiness
-- Tempo readiness
-- Grafana readiness
-- sample `/api/v1/orders` endpoint availability
-
-## Security and Governance
-
-Current baseline controls:
-
-- `pip-audit` dependency scanning in CI.
-- Trivy filesystem scanning in CI.
-- CodeQL Python static analysis in `.github/workflows/codeql.yml`.
-- Dependabot version-update configuration for GitHub Actions and Python requirements.
-- GitHub secret scanning enabled.
-- GitHub push protection enabled.
-- Branch protection on `main` requiring the split CI checks.
-- Required pull request review count of one on `main`.
-- CODEOWNERS, issue templates, PR template, SECURITY.md, and CONTRIBUTING.md.
-- Custom application containers run as non-root users.
-- Local app services use read-only root filesystems, dropped Linux capabilities, no-new-privileges, and tmpfs-backed `/tmp` where compatible.
-- API-facing FastAPI services set conservative security headers.
-- Grafana `admin` / `admin` credentials are documented as local-demo only and can be overridden through environment variables.
-
-Dependabot security updates are not currently enabled in repository settings; Dependabot is configured for version-update governance. Docker socket and host filesystem mounts are local observability features and should not be used as-is in production.
-
-## Operational Scenarios
-
-The lab is designed around realistic failure modes:
-
-- Dependency outage: payment-gateway errors increase API failures and trigger dependency-focused investigation.
-- Observability degradation: Prometheus, Loki, Tempo, or Grafana readiness failures block smoke validation even if app containers start.
-- Startup sequencing failure: API readiness depends on downstream and telemetry startup behavior instead of assuming all containers are ready immediately.
-- Metrics validation failure: smoke testing requires expected metric families to exist, catching instrumentation regressions.
-- RCA workflow degradation: AI RCA must continue with deterministic `rule_based` output when an external LLM provider is unavailable.
-
-## Failure Simulation Philosophy
-
-Failure scenarios should be reproducible, observable, and reversible. A scenario is useful only when it produces evidence in at least two telemetry planes, such as metrics plus logs or logs plus traces. Smoke checks should not be weakened to make a demo pass; runtime failures should be fixed at the service, dependency, or telemetry pipeline boundary.
+- FastAPI service with production-style middleware, health checks, standardized responses, and exception handling.
+- A separate observable payment-gateway dependency service with metrics, logs, traces, and failure simulation.
+- Prometheus metrics for request rate, duration, errors, active requests, endpoint throughput, status distribution, and dependency latency.
+- Structured JSON logs with correlation IDs, trace IDs, severity, route, status code, and exception stack traces.
+- OpenTelemetry traces exported to Grafana Alloy and stored in Tempo.
+- Grafana dashboards for golden signals and incident investigation.
+- Prometheus and Grafana alerting with severity, probable causes, and remediation guidance.
+- SLO and error budget tracking for availability, latency compliance, and error rate.
+- Burn-rate recording rules and fast/slow burn alerts.
+- Reproducible incident scenarios for downtime, latency, 500s, dependency degradation, and partial service failure.
+- Production-inspired incident management and postmortem generation from structured incident data.
+- Local-first AI-assisted RCA with rule-based fallback, Ollama/LM Studio/OpenAI-compatible provider support, and postmortem enrichment.
+- k6 smoke, spike, and sustained load profiles.
+- Kubernetes manifests and Helm-ready packaging placeholders.
+- GitHub Actions CI for linting, tests, Docker/Compose validation, smoke tests, YAML validation, and Kubernetes dry-run validation.
 
 ## Local Development Quickstart
 
