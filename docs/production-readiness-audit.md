@@ -58,7 +58,7 @@ Low:
 - The workflow now uses least-privilege `contents: read` permissions and concurrency cancellation.
 - Ruff lint and format checks run before slower gates.
 - Tests run in service-local contexts to avoid `app` import collisions.
-- Infrastructure validation covers YAML, Docker Compose config, KIND cluster startup, and Kubernetes dry-run manifests.
+- Infrastructure validation covers YAML, Docker Compose config, KIND cluster startup, explicit Kubernetes dry-run manifests, and Kustomize overlay dry-runs for local, dev, staging, and prod.
 - Docker build and stack smoke tests are separated from unit and static checks.
 - CodeQL is separated from CI quality gates so code scanning status is visible independently.
 

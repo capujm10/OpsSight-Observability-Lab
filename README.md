@@ -39,7 +39,8 @@ OpsSight exists to show the operational work behind a credible platform engineer
 - Grafana dashboards for SRE overview, API golden signals, incident investigation, Docker runtime, Kubernetes operations, workstation telemetry, and AI runtime monitoring.
 - Local-first AI RCA workflows with deterministic `rule_based` fallback and optional Ollama/LM Studio/OpenAI-compatible providers.
 - Docker Compose runtime with non-root custom service containers and local-demo security boundaries.
-- Kubernetes and Helm-ready manifests for migration/readiness review.
+- Kubernetes manifests with Kustomize overlays for local, dev, staging, and prod readiness review.
+- Helm-ready repository structure for future packaging work; Helm is not the active deployment interface yet.
 - Split GitHub Actions quality gates: Ruff, mypy, pytest, YAML validation, Docker build, KIND-backed Kubernetes validation, smoke testing, pip-audit, and Trivy.
 - CodeQL Python static analysis as a separate code-scanning workflow.
 - Public repository governance through Dependabot, CODEOWNERS, issue/PR templates, SECURITY.md, CONTRIBUTING.md, secret scanning, push protection, and branch protection.
@@ -278,20 +279,27 @@ Kubernetes manifests live under:
 - `k8s/api`
 - `k8s/monitoring`
 - `k8s/overlays/local`
+- `k8s/overlays/dev`
+- `k8s/overlays/staging`
+- `k8s/overlays/prod`
 
 CI starts a KIND cluster and validates manifests with:
 
 ```bash
-kubectl apply --dry-run=client --validate=false -f k8s/base -f k8s/api -f k8s/monitoring
+bash scripts/validate-kustomize.sh
 ```
 
 Local validation example:
 
 ```bash
-kubectl apply --dry-run=client --validate=false -f k8s/base -f k8s/api -f k8s/monitoring
+bash scripts/validate-kustomize.sh
+kubectl apply --dry-run=client --validate=false -k k8s/overlays/local
+kubectl apply --dry-run=client --validate=false -k k8s/overlays/dev
+kubectl apply --dry-run=client --validate=false -k k8s/overlays/staging
+kubectl apply --dry-run=client --validate=false -k k8s/overlays/prod
 ```
 
-Full deployment requires a Kubernetes cluster, image publishing strategy, ingress/TLS configuration, storage classes, and real secret management.
+Docker Compose remains the full local observability runtime for Prometheus, Grafana, Loki, Tempo, Alloy, and smoke testing. Kustomize validates the Kubernetes application and monitoring readiness manifests; it does not replace the Compose lab stack. Full deployment requires a Kubernetes cluster, image publishing strategy, ingress/TLS configuration, storage classes, and real secret management.
 
 ## Repository Structure
 

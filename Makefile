@@ -1,4 +1,4 @@
-.PHONY: up down restart logs ps lint format format-check typecheck test ai-test validate-yaml validate-compose validate-k8s audit security-audit observability-check validate-all capture-demo-assets release-notes ci-local smoke load errors latency dependency alerts ai-rca alert-webhook postmortems k6-smoke k6-spike k6-sustained clean
+.PHONY: up down restart logs ps lint format format-check typecheck test ai-test validate-yaml validate-compose validate-k8s validate-kustomize audit security-audit observability-check validate-all capture-demo-assets release-notes ci-local smoke load errors latency dependency alerts ai-rca alert-webhook postmortems k6-smoke k6-spike k6-sustained clean
 
 up:
 	docker compose up -d --build
@@ -41,7 +41,25 @@ validate-compose:
 	docker compose config --quiet
 
 validate-k8s:
-	kubectl apply --dry-run=client -f k8s/base -f k8s/api -f k8s/monitoring
+	kubectl apply --dry-run=client --validate=false \
+		-f k8s/base/namespace.yaml \
+		-f k8s/base/configmap.yaml \
+		-f k8s/base/secret-placeholder.yaml \
+		-f k8s/api/ai-rca-deployment.yaml \
+		-f k8s/api/ai-rca-service.yaml \
+		-f k8s/api/api-deployment.yaml \
+		-f k8s/api/api-service.yaml \
+		-f k8s/api/dependency-deployment.yaml \
+		-f k8s/api/dependency-service.yaml \
+		-f k8s/api/hpa.yaml \
+		-f k8s/api/ingress.yaml \
+		-f k8s/api/networkpolicy.yaml \
+		-f k8s/monitoring/alloy-configmap.yaml \
+		-f k8s/monitoring/kube-state-metrics.yaml \
+		-f k8s/monitoring/prometheus-pvc.yaml
+
+validate-kustomize:
+	bash scripts/validate-kustomize.sh
 
 audit:
 	python -m pip_audit -r apps/api/requirements.txt -r apps/dependency/requirements.txt -r apps/ai-rca/requirements.txt -r apps/local-runtime-exporter/requirements.txt
@@ -61,7 +79,7 @@ capture-demo-assets:
 release-notes:
 	bash scripts/generate-release-notes.sh
 
-ci-local: lint format-check typecheck test validate-yaml validate-compose validate-k8s
+ci-local: lint format-check typecheck test validate-yaml validate-compose validate-k8s validate-kustomize
 
 ai-test:
 	cd apps/ai-rca && python -m pytest

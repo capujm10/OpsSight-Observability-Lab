@@ -4,15 +4,23 @@ resources:
   - ../../base
   - ../../api
   - ../../monitoring
-namespace: opsight
+namespace: opsight-dev
 images:
   - name: opsight/api
-    newTag: local
+    newTag: dev
   - name: opsight/payment-gateway
-    newTag: local
+    newTag: dev
   - name: opsight/ai-rca
-    newTag: local
+    newTag: dev
 patchesJson6902:
+  - target:
+      version: v1
+      kind: Namespace
+      name: opsight
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: opsight-dev
   - target:
       group: rbac.authorization.k8s.io
       version: v1
@@ -21,7 +29,7 @@ patchesJson6902:
     patch: |-
       - op: replace
         path: /metadata/name
-        value: kube-state-metrics-opsight
+        value: kube-state-metrics-opsight-dev
   - target:
       group: rbac.authorization.k8s.io
       version: v1
@@ -30,10 +38,10 @@ patchesJson6902:
     patch: |-
       - op: replace
         path: /metadata/name
-        value: kube-state-metrics-opsight
+        value: kube-state-metrics-opsight-dev
       - op: replace
         path: /roleRef/name
-        value: kube-state-metrics-opsight
+        value: kube-state-metrics-opsight-dev
 patchesStrategicMerge:
   - environment-config.yaml
   - ingress.yaml
