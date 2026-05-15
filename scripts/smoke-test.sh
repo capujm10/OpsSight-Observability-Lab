@@ -15,8 +15,23 @@ echo "===== Dependency health ====="
 curl -fsS "${DEPENDENCY_URL}/health/ready" >/dev/null
 
 echo "===== Metrics validation ====="
-curl -fsS "${BASE_URL}/metrics" | grep -q "opsight_http_requests_total"
-curl -fsS "${DEPENDENCY_URL}/metrics" | grep -q "opsight_payment"
+
+API_METRICS="$(curl -fsS "${BASE_URL}/metrics")"
+DEPENDENCY_METRICS="$(curl -fsS "${DEPENDENCY_URL}/metrics")"
+
+if ! echo "${API_METRICS}" | grep -q "opsight_http_requests_total"; then
+  echo "ERROR: missing metric opsight_http_requests_total from API metrics endpoint"
+  echo "Available API metric names:"
+  echo "${API_METRICS}" | grep -E "^[a-zA-Z_:][a-zA-Z0-9_:]*" | head -50 || true
+  exit 1
+fi
+
+if ! echo "${DEPENDENCY_METRICS}" | grep -q "opsight_payment"; then
+  echo "ERROR: missing metric opsight_payment from dependency metrics endpoint"
+  echo "Available dependency metric names:"
+  echo "${DEPENDENCY_METRICS}" | grep -E "^[a-zA-Z_:][a-zA-Z0-9_:]*" | head -50 || true
+  exit 1
+fi
 
 echo "===== Observability stack ====="
 curl -fsS "${PROM_URL}/-/healthy" >/dev/null
@@ -35,6 +50,7 @@ for i in {1..30}; do
 
   if [ "$i" -eq 30 ]; then
     echo "Grafana did not become ready in time"
+    curl -v "${GRAFANA_URL}/api/health" || true
     exit 1
   fi
 done
