@@ -1,4 +1,4 @@
-.PHONY: up down restart logs ps lint format format-check typecheck test ai-test validate-yaml validate-compose validate-k8s validate-kustomize audit security-audit observability-check validate-all capture-demo-assets release-notes ci-local smoke load errors latency dependency alerts ai-rca alert-webhook postmortems k6-smoke k6-spike k6-sustained clean
+.PHONY: up down restart logs ps lint format format-check typecheck test ai-test validate-yaml validate-compose validate-k8s validate-kustomize audit security-audit observability-check synthetic-monitor validate-all capture-demo-assets release-notes ci-local smoke load errors latency dependency dependency-outage degraded-upstream incident-sim alerts ai-rca alert-webhook postmortems k6-smoke k6-spike k6-sustained clean
 
 up:
 	docker compose up -d --build
@@ -70,6 +70,9 @@ security-audit:
 observability-check:
 	bash scripts/observability-check.sh
 
+synthetic-monitor:
+	bash scripts/synthetic-monitor.sh
+
 validate-all:
 	bash scripts/validate-all.sh
 
@@ -98,6 +101,15 @@ latency:
 
 dependency:
 	curl -sS http://localhost:8000/api/v1/simulate/dependency-failure | jq .
+
+dependency-outage:
+	bash scripts/simulate-incident.sh dependency-outage
+
+degraded-upstream:
+	bash scripts/simulate-incident.sh degraded-upstream
+
+incident-sim:
+	bash scripts/simulate-incident.sh all
 
 alerts:
 	curl -sS http://localhost:9090/api/v1/alerts | jq .
