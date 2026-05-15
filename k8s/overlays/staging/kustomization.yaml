@@ -4,32 +4,39 @@ resources:
   - ../../base
   - ../../api
   - ../../monitoring
-namespace: opsight
+namespace: opsight-staging
 images:
   - name: opsight/api
-    newTag: local
+    newTag: staging
   - name: opsight/payment-gateway
-    newTag: local
+    newTag: staging
   - name: opsight/ai-rca
-    newTag: local
+    newTag: staging
 patches:
+  - target:
+      kind: Namespace
+      name: opsight
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: opsight-staging
   - target:
       kind: ClusterRole
       name: kube-state-metrics
     patch: |-
       - op: replace
         path: /metadata/name
-        value: kube-state-metrics-opsight
+        value: kube-state-metrics-opsight-staging
   - target:
       kind: ClusterRoleBinding
       name: kube-state-metrics
     patch: |-
       - op: replace
         path: /metadata/name
-        value: kube-state-metrics-opsight
+        value: kube-state-metrics-opsight-staging
       - op: replace
         path: /roleRef/name
-        value: kube-state-metrics-opsight
+        value: kube-state-metrics-opsight-staging
   - path: environment-config.yaml
   - path: ingress.yaml
   - path: replicas.yaml

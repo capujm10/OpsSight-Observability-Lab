@@ -123,4 +123,4 @@ flowchart LR
   Build --> Smoke[Compose up and smoke-test.sh]
 ```
 
-The pipeline separates static correctness, infrastructure validation, security scanning, image build, and runtime smoke testing. This keeps failure domains visible and prevents a working unit-test suite from hiding broken containers or invalid Kubernetes manifests.
+The pipeline separates static correctness, infrastructure validation, security scanning, image build, and runtime smoke testing. Kubernetes validation renders and dry-runs the explicit manifests plus Kustomize overlays for local, dev, staging, and prod. Docker Compose remains the full local observability runtime for Prometheus, Grafana, Loki, Tempo, Alloy, and smoke testing.

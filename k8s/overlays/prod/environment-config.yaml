@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: opsight
+  name: opsight-api-config
+data:
+  OPSIGHT_ENVIRONMENT: prod
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: opsight
+  name: opsight-ai-rca-config
+data:
+  OPSIGHT_ENVIRONMENT: prod
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: opsight
+  name: payment-gateway
+spec:
+  template:
+    spec:
+      containers:
+        - name: payment-gateway
+          env:
+            - name: DEPENDENCY_ENVIRONMENT
+              value: prod

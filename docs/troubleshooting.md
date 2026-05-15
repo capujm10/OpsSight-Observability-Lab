@@ -1,5 +1,7 @@
 # Troubleshooting
 
+Use Docker Compose for the full local observability stack. Kustomize validation checks Kubernetes application and monitoring manifests, but it does not start the local Prometheus/Grafana/Loki/Tempo runtime.
+
 Check service state:
 
 ```bash
@@ -24,3 +26,10 @@ If logs are missing, confirm the Docker socket is mounted into Alloy and query:
 ```
 
 If traces are missing, confirm the API environment variable `OPSIGHT_OTEL_EXPORTER_OTLP_ENDPOINT=http://alloy:4317` and query Tempo from Grafana Explore.
+
+Validate Kustomize overlays when Kubernetes manifests fail CI:
+
+```bash
+bash scripts/validate-kustomize.sh
+kubectl kustomize k8s/overlays/local
+```

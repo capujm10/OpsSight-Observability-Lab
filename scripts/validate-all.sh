@@ -53,7 +53,25 @@ log "Docker Compose config"
 run docker compose config --quiet
 
 log "Kubernetes manifest dry-run"
-run kubectl apply --dry-run=client --validate=false -f k8s/base -f k8s/api -f k8s/monitoring
+run kubectl apply --dry-run=client --validate=false \
+  -f k8s/base/namespace.yaml \
+  -f k8s/base/configmap.yaml \
+  -f k8s/base/secret-placeholder.yaml \
+  -f k8s/api/ai-rca-deployment.yaml \
+  -f k8s/api/ai-rca-service.yaml \
+  -f k8s/api/api-deployment.yaml \
+  -f k8s/api/api-service.yaml \
+  -f k8s/api/dependency-deployment.yaml \
+  -f k8s/api/dependency-service.yaml \
+  -f k8s/api/hpa.yaml \
+  -f k8s/api/ingress.yaml \
+  -f k8s/api/networkpolicy.yaml \
+  -f k8s/monitoring/alloy-configmap.yaml \
+  -f k8s/monitoring/kube-state-metrics.yaml \
+  -f k8s/monitoring/prometheus-pvc.yaml
+
+log "Kustomize overlay validation"
+run bash scripts/validate-kustomize.sh
 
 if [ "${START_STACK}" = "1" ]; then
   log "Docker Compose build and start"

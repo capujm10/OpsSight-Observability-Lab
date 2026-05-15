@@ -1,5 +1,7 @@
 # Operational Runbook
 
+Docker Compose is the full local runtime for the API, dependency service, AI RCA, Prometheus, Grafana, Loki, Tempo, and Alloy. Kubernetes/Kustomize manifests are readiness and GitOps artifacts; use them for render and dry-run validation unless a real Kubernetes cluster and image publishing path are configured.
+
 Start platform:
 
 ```bash
@@ -33,6 +35,12 @@ Validate recovery:
 ```bash
 bash scripts/smoke-test.sh
 curl http://localhost:9090/api/v1/alerts
+```
+
+Validate Kubernetes overlays:
+
+```bash
+bash scripts/validate-kustomize.sh
 ```
 
 Default Grafana credentials:
