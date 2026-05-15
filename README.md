@@ -171,6 +171,13 @@ The lab is designed around realistic failure modes:
 - Metrics validation failure: smoke testing requires expected metric families to exist, catching instrumentation regressions.
 - RCA workflow degradation: AI RCA must continue with deterministic `rule_based` output when an external LLM provider is unavailable.
 
+Operational maturity assets:
+
+- `OpsSight SLO Operational Maturity` Grafana dashboard for RED metrics, dependency latency, saturation, burn-rate windows, and alert visibility.
+- `scripts/synthetic-monitor.sh` for fast API/dependency/metrics/trace validation after the stack starts or recovers.
+- `scripts/simulate-incident.sh` for repeatable dependency outage, latency spike, elevated error-rate, and degraded-upstream scenarios.
+- `docs/slo-strategy.md`, `docs/synthetic-monitoring.md`, and `docs/incident-simulation.md` for operator-facing workflows.
+
 ## Failure Simulation Philosophy
 
 Failure scenarios should be reproducible, observable, and reversible. A scenario is useful only when it produces evidence in at least two telemetry planes, such as metrics plus logs or logs plus traces. Smoke checks should not be weakened to make a demo pass; runtime failures should be fixed at the service, dependency, or telemetry pipeline boundary.
@@ -349,6 +356,15 @@ bash scripts/generate-release-notes.sh
 ```
 
 `validate-all.sh` runs static checks, repository tests, Compose validation, Kubernetes dry-run validation, and the smoke test. Set `START_STACK=1 CLEANUP_STACK=1` to have it start and clean up the Compose stack around the smoke test.
+
+Operational maturity helpers:
+
+```bash
+make synthetic-monitor
+make incident-sim
+make dependency-outage
+make degraded-upstream
+```
 
 ## Screenshots
 

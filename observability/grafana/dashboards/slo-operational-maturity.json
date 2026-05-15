@@ -1,0 +1,126 @@
+{
+  "uid": "opsight-slo-operational-maturity",
+  "title": "OpsSight SLO Operational Maturity",
+  "tags": ["opsight", "slo", "red", "operational-maturity"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": {"from": "now-1h", "to": "now"},
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Availability SLI",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"x": 0, "y": 0, "w": 6, "h": 4},
+      "targets": [{"refId": "A", "expr": "opsight:sli_availability:5m"}],
+      "fieldConfig": {"defaults": {"unit": "percentunit", "thresholds": {"steps": [{"color": "red"}, {"color": "orange", "value": 0.995}, {"color": "green", "value": 0.999}]}}}
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Error Budget Remaining",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"x": 6, "y": 0, "w": 6, "h": 4},
+      "targets": [{"refId": "A", "expr": "opsight:slo_error_budget_remaining:30d"}],
+      "fieldConfig": {"defaults": {"unit": "percentunit", "thresholds": {"steps": [{"color": "red"}, {"color": "orange", "value": 0.25}, {"color": "green", "value": 0.75}]}}}
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "5m Burn Rate",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"x": 12, "y": 0, "w": 6, "h": 4},
+      "targets": [{"refId": "A", "expr": "opsight:slo_availability_burn_rate:5m"}],
+      "fieldConfig": {"defaults": {"unit": "none", "thresholds": {"steps": [{"color": "green"}, {"color": "orange", "value": 3}, {"color": "red", "value": 14}]}}}
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Active API Requests",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"x": 18, "y": 0, "w": 6, "h": 4},
+      "targets": [{"refId": "A", "expr": "sum(opsight_http_active_requests)"}],
+      "fieldConfig": {"defaults": {"unit": "none"}}
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "RED: Request Throughput",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"x": 0, "y": 4, "w": 8, "h": 8},
+      "targets": [{"refId": "A", "expr": "sum(rate(opsight_http_requests_total[5m])) by (route, method)", "legendFormat": "{{method}} {{route}}"}],
+      "fieldConfig": {"defaults": {"unit": "reqps"}}
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "RED: Error Rate",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"x": 8, "y": 4, "w": 8, "h": 8},
+      "targets": [{"refId": "A", "expr": "opsight:sli_error_rate:5m", "legendFormat": "5xx ratio"}],
+      "fieldConfig": {"defaults": {"unit": "percentunit", "thresholds": {"steps": [{"color": "green"}, {"color": "orange", "value": 0.01}, {"color": "red", "value": 0.05}]}}}
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "RED: API Latency p95",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"x": 16, "y": 4, "w": 8, "h": 8},
+      "targets": [{"refId": "A", "expr": "opsight:api_latency_p95:5m", "legendFormat": "{{route}}"}],
+      "fieldConfig": {"defaults": {"unit": "s", "thresholds": {"steps": [{"color": "green"}, {"color": "orange", "value": 0.5}, {"color": "red", "value": 1}]}}}
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Dependency Latency p95",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"x": 0, "y": 12, "w": 8, "h": 8},
+      "targets": [{"refId": "A", "expr": "opsight:dependency_latency_p95:5m", "legendFormat": "{{dependency}} {{operation}}"}],
+      "fieldConfig": {"defaults": {"unit": "s"}}
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Saturation Indicators",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"x": 8, "y": 12, "w": 8, "h": 8},
+      "targets": [
+        {"refId": "A", "expr": "sum(opsight_http_active_requests)", "legendFormat": "api active"},
+        {"refId": "B", "expr": "sum(opsight_payment_active_requests)", "legendFormat": "payment active"},
+        {"refId": "C", "expr": "sum(opsight_ai_rca_active_requests)", "legendFormat": "ai rca active"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "none"}}
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Burn Rate Windows",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"x": 16, "y": 12, "w": 8, "h": 8},
+      "targets": [
+        {"refId": "A", "expr": "opsight:slo_availability_burn_rate:5m", "legendFormat": "5m"},
+        {"refId": "B", "expr": "opsight:slo_availability_burn_rate:1h", "legendFormat": "1h"},
+        {"refId": "C", "expr": "opsight:slo_availability_burn_rate:6h", "legendFormat": "6h"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "none", "thresholds": {"steps": [{"color": "green"}, {"color": "orange", "value": 3}, {"color": "red", "value": 14}]}}}
+    },
+    {
+      "id": 11,
+      "type": "table",
+      "title": "Burn-Rate Alert Visibility",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"x": 0, "y": 20, "w": 12, "h": 8},
+      "targets": [{"refId": "A", "expr": "ALERTS{alertname=~\"OpsSightSLOFastBurn|OpsSightSLOSlowBurn|OpsSightExcessiveErrorRate\",alertstate=\"firing\"}", "format": "table", "instant": true}]
+    },
+    {
+      "id": 12,
+      "type": "logs",
+      "title": "Recent Error and Simulation Logs",
+      "datasource": {"type": "loki", "uid": "loki"},
+      "gridPos": {"x": 12, "y": 20, "w": 12, "h": 8},
+      "targets": [{"refId": "A", "expr": "{service=~\"opsight-api|payment-gateway\"} | json | severity =~ \"ERROR|WARNING\""}]
+    }
+  ]
+}
