@@ -105,7 +105,7 @@ jobs:
           cache: pip
       - uses: azure/setup-kubectl@v4
       - name: Start Kubernetes cluster
-        uses: helm/kind-action@v1.10.0
+        uses: helm/kind-action@v1.14.0
       - name: Install YAML tooling
         run: |
           python -m pip install --upgrade pip
