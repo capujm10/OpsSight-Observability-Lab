@@ -43,9 +43,7 @@ def tasks(values: list[dict[str, str]]) -> str:
         return "| Task | Owner | Priority | Status |\n| --- | --- | --- | --- |\n| None recorded | - | - | - |"
     rows = ["| Task | Owner | Priority | Status |", "| --- | --- | --- | --- |"]
     for task in values:
-        rows.append(
-            f"| {task['task']} | {task.get('owner', 'Unassigned')} | " f"{task.get('priority', 'P2')} | {task.get('status', 'Open')} |"
-        )
+        rows.append(f"| {task['task']} | {task.get('owner', 'Unassigned')} | {task.get('priority', 'P2')} | {task.get('status', 'Open')} |")
     return "\n".join(rows)
 
 
