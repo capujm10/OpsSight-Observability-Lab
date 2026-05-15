@@ -30,10 +30,16 @@ Do not open public issues for exploitable vulnerabilities.
 - CI runs `pip-audit` against Python requirement files.
 - CI runs Trivy filesystem scanning for high and critical findings.
 - CodeQL runs Python static analysis through GitHub code scanning.
-- Dependabot is configured for version-update pull requests for GitHub Actions and Python requirements.
+- Dependabot is configured for governed version-update pull requests for GitHub Actions and Python requirements, including grouped minor/patch updates and scoped dependency labels.
 - Custom application containers run as non-root users and use conservative Compose runtime restrictions where compatible.
 
 Dependabot security updates are not currently enabled in repository settings. Treat Dependabot here as version governance, not as a complete vulnerability-management program.
+
+Dependabot governance defaults:
+
+- Minor and patch updates are grouped by ecosystem or service to reduce review noise.
+- Major updates remain separate compatibility reviews.
+- Dependency PRs must keep CI, dependency audit, and relevant runtime validation passing before merge.
 
 ## Maintainer Checks
 
