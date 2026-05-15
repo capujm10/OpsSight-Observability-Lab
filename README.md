@@ -48,45 +48,48 @@ OpsSight exists to show the operational work behind a credible platform engineer
 
 ```mermaid
 flowchart TB
-  Dev[Developer / CI Runner] --> Compose[Docker Compose Runtime]
-  Dev --> GHA[GitHub Actions CI/CD]
-  GHA --> Quality[Lint, Format, Type Check, Unit Tests]
-  GHA --> Infra[Compose, YAML, KIND + kubectl Dry Run]
-  GHA --> Sec[pip-audit + Trivy]
-  GHA --> Build[Docker Build + Smoke Test Stack]
 
-  Compose --> API[FastAPI Orders API]
-  Compose --> Pay[Payment Gateway Dependency]
-  Compose --> RCA[AI RCA Service]
-  Compose --> Exporter[Local Runtime Exporter]
+  Dev["Developer / CI Runner"] --> Compose["Docker Compose Runtime"]
+  Dev --> GHA["GitHub Actions CI/CD"]
+
+  GHA --> Quality["Lint, Format, Type Check, Unit Tests"]
+  GHA --> Infra["Compose, YAML, KIND + kubectl Dry Run"]
+  GHA --> Sec["pip-audit + Trivy"]
+  GHA --> Build["Docker Build + Smoke Test Stack"]
+
+  Compose --> API["FastAPI Orders API"]
+  Compose --> Pay["Payment Gateway Dependency"]
+  Compose --> RCA["AI RCA Service"]
+  Compose --> Exporter["Local Runtime Exporter"]
 
   API --> Pay
-  API --> Metrics[/metrics]
+
+  API --> Metrics["Metrics Endpoint"]
   Pay --> Metrics
   RCA --> Metrics
   Exporter --> Metrics
 
-  API --> Logs[JSON stdout logs]
+  API --> Logs["JSON stdout logs"]
   Pay --> Logs
   RCA --> Logs
 
-  API --> Traces[OTLP traces]
+  API --> Traces["OTLP Traces"]
   Pay --> Traces
   RCA --> Traces
 
-  Metrics --> Alloy[Grafana Alloy]
+  Metrics --> Alloy["Grafana Alloy"]
   Logs --> Alloy
   Traces --> Alloy
 
-  Alloy --> Prom[Prometheus]
-  Alloy --> Loki[Loki]
-  Alloy --> Tempo[Tempo]
+  Alloy --> Prom["Prometheus"]
+  Alloy --> Loki["Loki"]
+  Alloy --> Tempo["Tempo"]
 
-  Prom --> Grafana[Grafana Dashboards and Alerts]
+  Prom --> Grafana["Grafana"]
   Loki --> Grafana
   Tempo --> Grafana
 
-  K8s[Kubernetes Manifests] --> Infra
+  K8s["Kubernetes Manifests"] --> Infra
 ```
 
 ## Core Services
