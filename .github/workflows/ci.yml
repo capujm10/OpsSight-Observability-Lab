@@ -103,7 +103,7 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
-      - uses: azure/setup-kubectl@v4
+      - uses: azure/setup-kubectl@v5
       - name: Start Kubernetes cluster
         uses: helm/kind-action@v1.10.0
       - name: Install YAML tooling
