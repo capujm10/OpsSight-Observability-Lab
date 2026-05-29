@@ -1,0 +1,59 @@
+repository:
+  name: OpsSight-Observability-Lab
+  purpose: >-
+    Portfolio-grade, local-first observability engineering lab that demonstrates
+    production-style SRE, platform engineering, and AI-assisted incident response practices.
+  maturity_level: "M3 - Operationally Validated Portfolio Lab"
+  operational_mode: "Local-first runtime with CI-backed validation and Kubernetes readiness manifests"
+  strategic_role: >-
+    Governed consumer and showcase of engineering standards for observability,
+    incident workflows, and production-readiness discipline.
+
+boundaries:
+  in_scope:
+    - FastAPI services and local Compose runtime
+    - Observability stack (Prometheus, Grafana, Loki, Tempo, Alloy)
+    - AI-assisted RCA workflows with deterministic fallback
+    - Kubernetes manifest readiness validation
+    - Operational runbooks, postmortems, and incident simulation documentation
+  out_of_scope:
+    - Managed-cloud production hosting
+    - Multi-cluster Kubernetes operations
+    - Enterprise IAM, secret-management backplanes, or tenancy design
+    - Autonomous remediation actions without human review
+
+risk_profile:
+  key_risks:
+    - name: "Demo-to-production overclaim"
+      impact: "Portfolio misrepresentation and unsafe reuse assumptions"
+      mitigation: "Explicit local-lab boundaries in README, docs, and governance context"
+    - name: "Telemetry drift"
+      impact: "Dashboards and alerts diverge from service behavior"
+      mitigation: "Smoke checks, observability checks, and manifest/CI validation gates"
+    - name: "AI RCA provider dependency"
+      impact: "Degraded RCA quality when external LLM providers are unavailable"
+      mitigation: "Deterministic rule_based fallback retained and tested"
+
+standards_alignment:
+  engineering_standards_repo_relation: "Consumer"
+  alignment_areas:
+    - "security baseline and secure-by-default local configuration"
+    - "observability signal completeness (metrics, logs, traces)"
+    - "validation-first CI quality gates"
+    - "documentation-backed operational workflows"
+    - "incremental, reversible, portfolio-oriented change management"
+
+validation_requirements:
+  required_local:
+    - "python -m ruff check apps scripts tests"
+    - "python -m ruff format --check apps scripts tests"
+    - "python -m pytest tests"
+    - "docker compose config --quiet"
+    - "kubectl apply --dry-run=client --validate=false -f k8s/base -f k8s/api -f k8s/monitoring"
+    - "bash scripts/smoke-test.sh"
+  required_lightweight:
+    - "bash scripts/validate-standards.sh"
+  policy:
+    - "No secrets committed"
+    - "No CI gate weakening"
+    - "No runtime behavior changes for docs-only governance waves"

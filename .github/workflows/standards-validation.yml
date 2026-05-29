@@ -1,0 +1,17 @@
+name: Standards Context Validation
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  standards-context:
+    name: Validate governance and observability context
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run lightweight standards validator
+        run: bash scripts/validate-standards.sh

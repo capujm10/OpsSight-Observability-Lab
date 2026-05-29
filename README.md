@@ -17,6 +17,18 @@ OpsSight Observability Lab is a public SRE and platform engineering portfolio pr
 
 The project is intentionally local-first. It is built to demonstrate engineering judgment around service instrumentation, incident workflows, CI/CD quality control, and baseline security hardening without pretending that a Docker Compose lab is a fully managed production platform.
 
+## Observability Platform Archetype
+
+OpsSight is normalized around a lightweight observability-platform archetype so reviewers can evaluate it consistently as a portfolio artifact:
+
+| Archetype layer | OpsSight implementation |
+| --- | --- |
+| Platform purpose and governance | [governance.yml](governance.yml), [governance.context.md](governance.context.md) |
+| Service and telemetry architecture | [docs/architecture.md](docs/architecture.md), [docs/observability-architecture.md](docs/observability-architecture.md), [observability.context.md](observability.context.md) |
+| Operational validation and readiness | [scripts/validate-all.sh](scripts/validate-all.sh), [scripts/smoke-test.sh](scripts/smoke-test.sh), [scripts/validate-standards.sh](scripts/validate-standards.sh) |
+| Incident and RCA workflows | [docs/incident-management.md](docs/incident-management.md), [docs/ai-rca.md](docs/ai-rca.md), `artifacts/ai-rca/` |
+| Recruiter-facing narrative | [docs/opsight-case-study.md](docs/opsight-case-study.md), [docs/demo-walkthrough.md](docs/demo-walkthrough.md) |
+
 ## Why This Project Exists
 
 OpsSight exists to show the operational work behind a credible platform engineering portfolio project: designing service telemetry, validating runtime dependencies, failing builds for the right reasons, and documenting how an operator would investigate real failure modes. The goal is not to present a toy dashboard stack; it is to demonstrate how an SRE thinks about evidence, readiness, failure isolation, and safe publication.
@@ -59,9 +71,10 @@ flowchart TB
   GHA --> Build["Docker Build + Smoke Test Stack"]
 
   Compose --> API["FastAPI Orders API"]
-  Compose --> Pay["Payment Gateway Dependency"]
+  Compose --> Pay["Payment Gateway"]
   Compose --> RCA["AI RCA Service"]
   Compose --> Exporter["Local Runtime Exporter"]
+  Alert["Alertmanager-Compatible Alert"] --> RCA
 
   API --> Pay
 
@@ -326,6 +339,9 @@ k8s/                       Kubernetes readiness manifests
 helm/                      Helm packaging scaffold
 load/k6/                   k6 load profiles
 scripts/                   Smoke, simulation, RCA, and postmortem utilities
+governance.yml             Repository governance profile and standards alignment
+governance.context.md      Governance philosophy, boundaries, and doc expectations
+observability.context.md   Telemetry and monitoring architecture context
 docs/                      Architecture, runbooks, security, AI RCA, and audit docs
 incident-postmortems/      Templates, examples, and generated postmortems
 .github/                   CI, Dependabot, ownership, and collaboration templates
@@ -349,6 +365,7 @@ Reusable operational scripts live in `scripts/`:
 
 ```bash
 bash scripts/validate-all.sh
+bash scripts/validate-standards.sh
 bash scripts/security-audit.sh
 bash scripts/observability-check.sh
 bash scripts/capture-demo-assets.sh
@@ -356,6 +373,8 @@ bash scripts/generate-release-notes.sh
 ```
 
 `validate-all.sh` runs static checks, repository tests, Compose validation, Kubernetes dry-run validation, and the smoke test. Set `START_STACK=1 CLEANUP_STACK=1` to have it start and clean up the Compose stack around the smoke test.
+
+`validate-standards.sh` is the lightweight docs/governance validator for Wave 4 artifacts and standards-context presence checks.
 
 Operational maturity helpers:
 
